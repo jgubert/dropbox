@@ -22,7 +22,7 @@ int main( int argc, char *argv[] ){
 	strcpy(userid, argv[1]);
 	address = atoi(argv[2]);
 	port = atoi(argv[3]);
-
+	
 	printf("%s\n%d\n%d\n", userid, address, port);*/
 
 
