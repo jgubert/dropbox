@@ -5,14 +5,16 @@
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
 
-int login_server(char *host, int port){return 0;}
-void sync_client(){}
-void send_file(char *file){}
-void get_file(char *file){}
-void delete_file(char *file){}
-void close_session(){}
+//int login_server(char *host, int port){return 0;}
+//void sync_client(){}
+//void send_file(char *file){}
+//void get_file(char *file){}
+//void delete_file(char *file){}
+//void close_session(){}
 
 int main(){
+
+	sync_client();
 
 	// interface
 	char command[MAX_COMMAND_SIZE];
