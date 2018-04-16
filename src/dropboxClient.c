@@ -5,7 +5,6 @@
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
 
-
 int login_server(char *host, int port){return 0;}
 void sync_client(){}
 void send_file(char *file){}
@@ -13,9 +12,7 @@ void get_file(char *file){}
 void delete_file(char *file){}
 void close_session(){}
 
-
 int main(){
-
 
 	// interface
 	char command[MAX_COMMAND_SIZE];
@@ -27,7 +24,6 @@ int main(){
 			#ifdef DEBUG
 			printf("fazer upload\n");
 			#endif
-
 			// fazer upload (continuar)
 
 		}
@@ -74,7 +70,6 @@ int main(){
 
 			#ifdef DEBUG
 			printf("exit\n");
-
 			#endif
 
 			// fecha a sessão com o usuário (continuar)

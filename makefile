@@ -1,6 +1,3 @@
-
-
-
 default: program
 
 program:
