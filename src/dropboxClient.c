@@ -17,6 +17,7 @@ int main(){
 	// interface
 	char command[MAX_COMMAND_SIZE];
 
+	// mais tarde, botar esse loop em uma função
 	while (1) {
 		scanf("%s", command);
 
