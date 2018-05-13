@@ -20,7 +20,11 @@
 
 char user_name[USER_NAME_SIZE];
 int user_socket_id;
-
+// teste
+struct sockaddr_in peer;
+SOCKET socket_id;
+int peerlen, rc;
+char buffer[BUFFER_SIZE];
 
 int get_sync_dir() {
 	//TODO implementar
@@ -28,10 +32,10 @@ int get_sync_dir() {
 }
 
 int login_server(char *host, int port) {
-    struct sockaddr_in peer;
-    SOCKET socket_id;
-    int peerlen, rc;
-    char buffer[BUFFER_SIZE];
+    //struct sockaddr_in peer;
+    //SOCKET socket_id;
+    //int peerlen, rc;
+    //char buffer[BUFFER_SIZE];
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
@@ -56,14 +60,14 @@ int login_server(char *host, int port) {
 	}
 	
 	// Envia pacotes Hello e aguarda resposta
-	while(1) {
+	/*while(1) {
 		strcpy(buffer,"Hello");
 		sendto(socket_id, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Hello\n");
 		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
 		printf("Recebido %s\n\n",&buffer);
 		sleep(5);
-	}
+	}*/
 	
 	return SUCCESS;
 
@@ -74,6 +78,7 @@ int main(int argc, char *argv[] ){
     char * host;
 
     struct package pacote; // pacote que será enviado
+    struct instruction command;
 
     if(argc < 4) {
     	printf("Utilizar:\n");
