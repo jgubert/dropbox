@@ -41,8 +41,11 @@ void populate_instruction(char line[], struct instruction *inst) {
   
   char command[50], path[50], filename[40];
 
-  inst->command_id = getCommand_id(command);
+  // quebrar a linha em partes
+  
 
-  strcmp(inst->path, path);
-  strcmp(inst->filename, filename);
+
+  //inst->command_id = getCommand_id(command);
+  //strcmp(inst->path, path);
+  //strcmp(inst->filename, filename);
 }
