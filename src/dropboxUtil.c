@@ -39,10 +39,27 @@ int getCommand_id(char *command){
 
 void populate_instruction(char line[], struct instruction *inst) {
   
-  char command[50], path[50], filename[40];
+  char *command, path[50], filename[40];
 
   // quebrar a linha em partes
+  printf("Line: %s\n", line);
+
+
+  command = strtok(line, " ");
+  printf("Command: %s\n", command);
+
+  line = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona
+  printf("Nova linha: %s\n", line);
+
+  char* start_name_pointer = strrchr(line, '/'); // last occurrence of '/'
   
+  printf("\n%ld\n", start_name_pointer-line);
+  strncpy(path, line, start_name_pointer - line+1);
+
+  printf("Path: %s\n", path);
+
+  strcpy(filename, start_name_pointer+1);
+  printf("Filename: %s\n", filename);
 
 
   //inst->command_id = getCommand_id(command);

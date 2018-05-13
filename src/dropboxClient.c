@@ -113,8 +113,12 @@ int main(int argc, char *argv[] ){
 
 	while(1) {
 		
-		scanf("%s", line);
+		scanf("%[^\n]", line);
+		getchar();
+		
 		populate_instruction(line, &command);
+		fflush(stdin);
+
 
 
 	}
