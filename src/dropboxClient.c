@@ -1,4 +1,5 @@
 //#include "../include/dropboxClient.h"
+#include "../include/dropboxUtil.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -31,8 +32,6 @@ int login_server(char *host, int port) {
     SOCKET socket_id;
     int peerlen, rc;
     char buffer[BUFFER_SIZE];
-
-    struct package pacote; // pacote que será enviado
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
@@ -73,6 +72,8 @@ int login_server(char *host, int port) {
 int main(int argc, char *argv[] ){
     int port;
     char * host;
+
+    struct package pacote; // pacote que será enviado
 
     if(argc < 4) {
     	printf("Utilizar:\n");
