@@ -63,3 +63,19 @@ int main(int argc, char *argv[]) {
 	}
 
 }
+
+void create_path(char *user){
+
+	struct stat st = {0};
+	char dir[50] = "sync_dir_";
+	strcat(dir, user);
+
+	if(stat(dir, &st) != 0){
+		mkdir(dir, 07777);
+		printf("pasta criada para user %s", user);
+	}
+
+	else{
+		printf("ja existe pasta para user %s", user);
+	}
+}

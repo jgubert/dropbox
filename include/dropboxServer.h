@@ -16,3 +16,4 @@ int socket_create(char *host, int port);
 void sync_server();
 void receive_file(char *file);
 void send_file2(char *file); //ta com o mesmo nome de outra funcao
+void create_path(char *user);
