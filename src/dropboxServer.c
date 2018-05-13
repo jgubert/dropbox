@@ -7,16 +7,10 @@
 
 #include <stdio.h>
 #include <string.h>
-
-
-#ifdef _WIN32
-	#include <winsock2.h>
-#else
-	#define SOCKET int
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <netinet/in.h>
-#endif
+#define SOCKET int
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 int main(int argc, char *argv[]) {
 
@@ -24,15 +18,6 @@ int main(int argc, char *argv[]) {
 	SOCKET  s;
 	int port, peerlen, rc;
     char buffer[100];
-
-#ifdef _WIN32
-	 WSADATA wsaData;
-
-	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-		printf("Erro no startup do socket\n");
-		exit(1);
-	}
-#endif
 
 	//Pega paramentro
 	if(argc < 2) {
@@ -68,11 +53,8 @@ int main(int argc, char *argv[]) {
 	while (1)
 	{
 	    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
-#ifdef _WIN32
-		rc = recvfrom(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, &peerlen);
-#else
+
 		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
-#endif
 		printf("Recebido %s\n", &buffer);
 
 		strcpy(buffer,"ACK");
