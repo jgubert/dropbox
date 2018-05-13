@@ -25,7 +25,3 @@ void send_file(char *file);
 void get_file(char *file);
 void delete_file(char *file);
 void close_session();
-
-void sync_client(){
-	printf("foi");
-}
