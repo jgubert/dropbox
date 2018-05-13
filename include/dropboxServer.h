@@ -1,3 +1,7 @@
+#define MAXNAMES 8
+#define MAXNAME 8
+#define MAXFILES 10
+
 struct file_info{
   char name[MAXNAME];
   char extension[MAXNAME];

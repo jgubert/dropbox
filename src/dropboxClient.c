@@ -26,6 +26,7 @@ struct sockaddr_in peer;
 SOCKET socket_id;
 int peerlen, rc;
 char buffer[BUFFER_SIZE];
+char buffer_receiver[BUFFER_SIZE];
 
 int get_sync_dir() {
 	//TODO implementar
@@ -119,10 +120,16 @@ int main(int argc, char *argv[] ){
 		populate_instruction(line, &command);
 		fflush(stdin);
 
+		// coloca a instrução no pacote
+		pacote.command = &command;
+
+
+		// envia o pacote
 		sendto(socket_id, &pacote, sizeof(pacote), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Pacote\n");
-		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		printf("Recebido %s\n\n",&buffer);
+		// recebe um ACK
+		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+		printf("Recebido %s\n\n",&buffer_receiver);
 
 		sleep(10);
 
