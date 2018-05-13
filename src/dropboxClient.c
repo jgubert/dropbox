@@ -86,7 +86,10 @@ int main(int argc, char *argv[] ){
 		strcpy(user_name, argv[1]);  // User
 	}
 	
+	
     host = malloc(strlen(argv[2])); // Host
+	strcpy(host, argv[2]);
+	
     port = atoi(argv[3]);   //Port
 
     // Estabelece sessao entre cliente e servidor
