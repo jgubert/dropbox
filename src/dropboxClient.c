@@ -2,18 +2,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
-#ifdef _WIN32
-	#include <winsock2.h>
-#else
-    #include <stdlib.h>
-    #include <unistd.h>
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <netinet/in.h>
-	#define SOCKET	int
-#endif
-
+#define SOCKET	int
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
 #define USER_NAME_SIZE 25
@@ -36,15 +31,6 @@ int login_server(char *host, int port) {
     SOCKET socket_id;
     int peerlen, rc;
     char buffer[BUFFER_SIZE];
-
-#ifdef _WIN32
-	 WSADATA wsaData;
-  
-	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-		printf("Erro no startup do socket\n");
-		return ERROR
-	}
-#endif
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
@@ -73,15 +59,9 @@ int login_server(char *host, int port) {
 		strcpy(buffer,"Hello");
 		sendto(socket_id, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Hello\n");
-#ifdef _WIN32
-		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, &peerlen); 
-		printf("Recebido %s\n\n",&buffer);
-		Sleep(5000);
-#else
 		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
 		printf("Recebido %s\n\n",&buffer);
 		sleep(5);
-#endif
 	}
 	
 	return SUCCESS;
@@ -91,15 +71,6 @@ int login_server(char *host, int port) {
 int main(int argc, char *argv[] ){
     int port;
     char * host;
-
-#ifdef _WIN32
-	 WSADATA wsaData;
-  
-	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-		printf("Erro no startup do socket\n");
-		exit(1);
-	}
-#endif
 
     if(argc < 4) {
     	printf("Utilizar:\n");
