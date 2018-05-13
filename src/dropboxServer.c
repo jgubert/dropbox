@@ -18,6 +18,8 @@
 
 #define SOCKET int
 
+void print_package(struct package pacote);
+
 int main(int argc, char *argv[]) {
 
     struct  sockaddr_in peer;
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]) {
 		rc = recvfrom(s, &pacote, sizeof(pacote), 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
 		//printf("Recebido %s\n", &buffer);
 
-
+		printf_package(pacote);
 
 		strcpy(buffer,"ACK");
 		sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
