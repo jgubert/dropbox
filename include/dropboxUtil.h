@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 struct instruction {
 	int command_id;
 	char path[70];
@@ -9,3 +11,6 @@ struct package {
 	struct instruction command;
 	char buffer[1250];
 };
+
+
+int getCommand(char *command);
