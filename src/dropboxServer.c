@@ -1,6 +1,6 @@
 
-//#include "dropboxServer.h"
-
+#include "../include/dropboxServer.h"
+#include "../include/dropboxUtil.h"
 //void sync_server(){}
 //void receive_file(char *file){}
 //void send_file2(char *file){}
@@ -17,6 +17,8 @@
 
 
 #define SOCKET int
+
+void print_package(struct package pacote);
 
 int main(int argc, char *argv[]) {
 
@@ -55,13 +57,17 @@ int main(int argc, char *argv[]) {
 
     printf("Socket inicializado. Aguardando mensagens...\n\n");
 
+    struct package pacote;
     // Recebe pacotes do cliente e responde com string "ACK"
 	while (1)
 	{
 	    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
 
-		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
-		printf("Recebido %s\n", &buffer);
+		//rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
+		rc = recvfrom(s, &pacote, sizeof(pacote), 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
+		//printf("Recebido %s\n", &buffer);
+
+		printf_package(pacote);
 
 		strcpy(buffer,"ACK");
 		sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
@@ -84,4 +90,13 @@ void create_path(char *user){
 	else{
 		printf("ja existe pasta para user %s", user);
 	}
+}
+
+void print_package(struct package pacote) {
+	printf("Usuario %s enviou um pacote\n", pacote.username);
+	printf("Informacoes da instrucao\n");
+	printf("%d\n", pacote.command->command_id);
+	printf("%s\n", pacote.command->path);
+	printf("%s\n", pacote.command->filename);
+	printf("Quantidade de bytes recebidos: %ld\n", sizeof(pacote.buffer));
 }
