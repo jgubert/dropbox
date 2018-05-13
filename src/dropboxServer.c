@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 #ifdef _WIN32
 	#include <winsock2.h>
 #else
@@ -17,7 +18,7 @@
 	#include <netinet/in.h>
 #endif
 
-int main(int argc, char *argv) {
+int main(int argc, char *argv[]) {
 
     struct  sockaddr_in peer;
 	SOCKET  s;
@@ -31,15 +32,22 @@ int main(int argc, char *argv) {
 		printf("Erro no startup do socket\n");
 		exit(1);
 	}
-#endif    
+#endif
+
+	//Pega paramentro
+	if(argc < 2) {
+		printf("Utilizar:\n");
+		printf("dropBoxServer <port>");
+		exit(1);
+	}
+
+	port = atoi(argv[1]);  // Porta
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if ((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		printf("Falha na criacao do socket\n");
 	    exit(1);
  	}
-
-    port = 4055; // mudar isso
 
     // Define domínio, IP e porta a receber dados
 	memset((void *) &peer,0,sizeof(struct sockaddr_in));
@@ -55,10 +63,10 @@ int main(int argc, char *argv) {
 	}
 
     printf("Socket inicializado. Aguardando mensagens...\n\n");
-    
+
     // Recebe pacotes do cliente e responde com string "ACK"
 	while (1)
-	{ 
+	{
 	    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
 #ifdef _WIN32
 		rc = recvfrom(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, &peerlen);
@@ -73,4 +81,3 @@ int main(int argc, char *argv) {
 	}
 
 }
-

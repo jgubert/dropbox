@@ -1,4 +1,4 @@
-default: client
+default: client server
 
 client: include/dropboxClient.h src/dropboxClient.c
 	gcc -o bin/dropboxClient src/dropboxClient.c
