@@ -38,8 +38,9 @@ int getCommand_id(char *command){
 }
 
 void populate_instruction(char line[], struct instruction *inst) {
-  
+
   char *command, path[50], filename[40];
+  int comm_type;
 
   // quebrar a linha em partes
   printf("Line: %s\n", line);
@@ -48,21 +49,48 @@ void populate_instruction(char line[], struct instruction *inst) {
   command = strtok(line, " ");
   printf("Command: %s\n", command);
 
-  line = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona
-  printf("Nova linha: %s\n", line);
+  comm_type = getCommand_id(command);
+  printf("comm_type: %d\n", comm_type);
 
-  char* start_name_pointer = strrchr(line, '/'); // last occurrence of '/'
-  
-  printf("\n%ld\n", start_name_pointer-line);
-  strncpy(path, line, start_name_pointer - line+1);
+  //PREENCHE PATH E FILENAME DO UPLOAD
+  switch (comm_type) {
+    case 0:
+      line = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona
+      printf("Nova linha: %s\n", line);
 
-  printf("Path: %s\n", path);
+      char* start_name_pointer = strrchr(line, '/'); // last occurrence of '/'
 
-  strcpy(filename, start_name_pointer+1);
-  printf("Filename: %s\n", filename);
+      printf("\n%ld\n", start_name_pointer-line);
+      strncpy(path, line, start_name_pointer - line+1);
+
+      printf("Path: %s\n", path);
+
+      strcpy(filename, start_name_pointer+1);
+      printf("Filename: %s\n", filename);
+
+      break;
+    case 1:
+      line = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona
+      printf("Nova linha: %s\n", line);
+
+      strcpy(filename, line);
+      printf("Filename: %s\n", filename);
+      strcpy(path, "");
+      printf("Path: %s\n", path);
+      break;
+    default:
+      strcpy(path, "");
+      strcpy(filename, "");
+      printf("Filename: %s\n", filename);
+      printf("Path: %s\n", path);
+      break;
+  }
 
 
-  //inst->command_id = getCommand_id(command);
-  //strcmp(inst->path, path);
-  //strcmp(inst->filename, filename);
+
+  inst->command_id = comm_type;
+  strcmp(inst->path, path);
+  strcmp(inst->filename, filename);
+
+  return;
 }
