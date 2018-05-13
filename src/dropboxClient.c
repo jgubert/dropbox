@@ -108,7 +108,15 @@ int main(int argc, char *argv[] ){
 		exit(1);
 	}
 
+	char line[100];
 
+	while(1) {
+		
+		scanf("%s", line);
+		populate_instruction(line, &command);
+
+
+	}
 /*
 	// interface
 	char command[MAX_COMMAND_SIZE];

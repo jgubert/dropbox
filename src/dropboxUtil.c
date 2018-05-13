@@ -10,7 +10,7 @@
 #define GET_SYNC_DIR 4
 #define EXIT 5
 
-int getCommand(char *command){
+int getCommand_id(char *command){
 
   if (strcmp(command, "upload") == 0){
     printf("DEBUG: COMMAND = upload\n");
@@ -35,4 +35,14 @@ int getCommand(char *command){
   else
     return ERROR;
 
+}
+
+void populate_instruction(char line[], struct instruction *inst) {
+  
+  char command[50], path[50], filename[40];
+
+  inst->command_id = getCommand_id(command);
+
+  strcmp(inst->path, path);
+  strcmp(inst->filename, filename);
 }

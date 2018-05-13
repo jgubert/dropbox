@@ -13,4 +13,5 @@ struct package {
 };
 
 
-int getCommand(char *command);
+int getCommand_id(char *command);
+void populate_instruction(char line[], struct instruction *inst);
