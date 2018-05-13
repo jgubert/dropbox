@@ -1,31 +1,84 @@
-#include "../include/dropboxClient.h"
+//#include "../include/dropboxClient.h"
+
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+	#include <winsock2.h>
+#else
+    #include <stdlib.h>
+    #include <unistd.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#define SOCKET	int
+#endif
+
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
+#define USER_NAME_SIZE 25
+#define BUFFER_SIZE 100
 
-//int login_server(char *host, int port){return 0;}
-//void sync_client(){}
-//void send_file(char *file){}
-//void get_file(char *file){}
-//void delete_file(char *file){}
-//void close_session(){}
-
-/*char userid[10];
-int address;
-int port;*/
 
 int main( int argc, char *argv[] ){
 
-	/*
-	strcpy(userid, argv[1]);
-	address = atoi(argv[2]);
-	port = atoi(argv[3]);
-	
-	printf("%s\n%d\n%d\n", userid, address, port);*/
+    struct sockaddr_in peer;
+    SOCKET s;
+    int port, peerlen, rc;
+    char ip[16], user[USER_NAME_SIZE];
+    char buffer[BUFFER_SIZE];
+
+#ifdef _WIN32
+	 WSADATA wsaData;
+  
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+		printf("Erro no startup do socket\n");
+		exit(1);
+	}
+#endif
+
+    if(argc < 4) {
+    	printf("Utilizar:\n");
+    	printf("dropBoxClient <user> <address> <port>");
+    	exit(1);
+    }
+
+    // Pega parametros
+    strcpy(user, argv[1]);  // User
+    strcpy(ip, argv[2]);    // Ip
+    port = atoi(argv[3]);   //Port
+
+    // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
+	if((s = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
+		printf("Falha na criacao do socket\n");
+		exit(1);
+ 	}
+
+    // Cria a estrutura com quem vai conversar 
+	peer.sin_family = AF_INET;
+	peer.sin_port = htons(port);
+	peer.sin_addr.s_addr = inet_addr(ip); 
+	peerlen = sizeof(peer);
+
+	// Envia pacotes Hello e aguarda resposta
+	while(1)
+	{
+		strcpy(buffer,"Hello");
+		sendto(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
+		printf("Enviado Hello\n");
+#ifdef _WIN32
+		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, &peerlen); 
+		printf("Recebido %s\n\n",&buffer);
+		Sleep(5000);
+#else
+		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
+		printf("Recebido %s\n\n",&buffer);
+		sleep(5);
+#endif
+	}
 
 
+/*
 	// interface
 	char command[MAX_COMMAND_SIZE];
 
@@ -36,7 +89,7 @@ int main( int argc, char *argv[] ){
 		if (strcmp(command, "upload") == 0) {
 			#ifdef DEBUG
 			printf("fazer upload\n");
-			#endif
+			#endifO
 			// fazer upload (continuar)
 
 		}
@@ -95,5 +148,6 @@ int main( int argc, char *argv[] ){
 		}
 
 	}
-	return 0;
+    return 0;
+*/
 }
