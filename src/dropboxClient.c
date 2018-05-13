@@ -109,7 +109,7 @@ int main(int argc, char *argv[] ){
 
     // Leitura de parametros
 	if(strlen(argv[1]) > USER_NAME_SIZE) {
-		printf("Erro: tamanho de usuario precisa ser maior que %d\n", USER_NAME_SIZE);
+		printf("Erro: tamanho de usuario precisa ser menor que %d\n", USER_NAME_SIZE);
 		exit(1);
 	} else {
 		strcpy(user_name, argv[1]);  // User
