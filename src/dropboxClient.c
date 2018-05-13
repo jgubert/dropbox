@@ -119,7 +119,7 @@ int main(int argc, char *argv[] ){
 		populate_instruction(line, &command);
 		fflush(stdin);
 
-		sendto(socket_id, pacote, sizeof(pacote), 0, (struct sockaddr *)&peer, peerlen);
+		sendto(socket_id, &pacote, sizeof(pacote), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Pacote\n");
 		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
 		printf("Recebido %s\n\n",&buffer);
