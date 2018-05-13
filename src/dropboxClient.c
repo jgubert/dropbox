@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define SOCKET	int
 #define MAX_COMMAND_SIZE 15
@@ -53,9 +54,9 @@ int login_server(char *host, int port) {
 	
 	//Executa o comando get_sync_dir
 	if(get_sync_dir() == SUCCESS) {
-		printf("Diretorio sincronizado com sucesso");
+		printf("Diretorio sincronizado com sucesso\n");
 	} else {
-		printf("Error ao sincronizar diretorio");
+		printf("Error ao sincronizar diretorio\n");
 		return ERROR;
 	}
 	
@@ -82,7 +83,7 @@ int main(int argc, char *argv[] ){
 
     if(argc < 4) {
     	printf("Utilizar:\n");
-    	printf("dropBoxClient <user> <address> <port>");
+    	printf("dropBoxClient <user> <address> <port>\n");
     	exit(1);
     }
 
