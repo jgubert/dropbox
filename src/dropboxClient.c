@@ -22,7 +22,7 @@
 #define ERROR -1
 #define SUCCESS 1
 
-char[USER_NAME_SIZE] user_name;
+char user_name[USER_NAME_SIZE];
 int user_socket_id;
 
 
@@ -49,7 +49,7 @@ int login_server(char *host, int port) {
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
 		printf("Falha na criacao do socket\n");
-		return ERROR
+		return ERROR;
  	}
 
     // Cria a estrutura com quem vai conversar 
@@ -58,11 +58,11 @@ int login_server(char *host, int port) {
 	peer.sin_addr.s_addr = inet_addr(host); 
 	peerlen = sizeof(peer);
 
-	printf("Criado socket #%d\n", scoket_id);
+	printf("Criado socket #%d\n", socket_id);
 	
 	//Executa o comando get_sync_dir
 	if(get_sync_dir() == SUCCESS) {
-		printf("Diretorio sincronizado com sucesso")
+		printf("Diretorio sincronizado com sucesso");
 	} else {
 		printf("Error ao sincronizar diretorio");
 		return ERROR;
@@ -71,20 +71,20 @@ int login_server(char *host, int port) {
 	// Envia pacotes Hello e aguarda resposta
 	while(1) {
 		strcpy(buffer,"Hello");
-		sendto(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
+		sendto(socket_id, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Hello\n");
 #ifdef _WIN32
-		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, &peerlen); 
+		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, &peerlen); 
 		printf("Recebido %s\n\n",&buffer);
 		Sleep(5000);
 #else
-		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
+		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
 		printf("Recebido %s\n\n",&buffer);
 		sleep(5);
 #endif
 	}
 	
-	return SUCCESS
+	return SUCCESS;
 
 }
 
