@@ -19,14 +19,78 @@
 #define USER_NAME_SIZE 25
 #define BUFFER_SIZE 100
 
+#define ERROR -1
+#DEFINE SUCCESS 1
 
-int main( int argc, char *argv[] ){
+char[USER_NAME_SIZE] user_name;
+int user_socket_id;
 
+
+int get_sync_dir() {
+	//TODO implementar
+	return SUCCESS;
+}
+
+int login_server(char *host, int port) {
     struct sockaddr_in peer;
-    SOCKET s;
-    int port, peerlen, rc;
-    char ip[16], user[USER_NAME_SIZE];
+    SOCKET socket_id;
+    int peerlen, rc;
     char buffer[BUFFER_SIZE];
+
+#ifdef _WIN32
+	 WSADATA wsaData;
+  
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+		printf("Erro no startup do socket\n");
+		return ERROR
+	}
+#endif
+
+    // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
+	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
+		printf("Falha na criacao do socket\n");
+		return ERROR
+ 	}
+
+    // Cria a estrutura com quem vai conversar 
+	peer.sin_family = AF_INET;
+	peer.sin_port = htons(port);
+	peer.sin_addr.s_addr = inet_addr(host); 
+	peerlen = sizeof(peer);
+
+	printf("Criado socket #%d\n", scoket_id);
+	
+	//Executa o comando get_sync_dir
+	if(get_sync_dir() == SUCCESS) {
+		printf("Diretorio sincronizado com sucesso")
+	} else {
+		printf("Error ao sincronizar diretorio");
+		return ERROR;
+	}
+	
+	// Envia pacotes Hello e aguarda resposta
+	while(1) {
+		strcpy(buffer,"Hello");
+		sendto(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
+		printf("Enviado Hello\n");
+#ifdef _WIN32
+		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, &peerlen); 
+		printf("Recebido %s\n\n",&buffer);
+		Sleep(5000);
+#else
+		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
+		printf("Recebido %s\n\n",&buffer);
+		sleep(5);
+#endif
+	}
+	
+	return SUCCESS
+
+}
+
+int main(int argc, char *argv[] ){
+    int port;
+    char * host;
 
 #ifdef _WIN32
 	 WSADATA wsaData;
@@ -43,38 +107,23 @@ int main( int argc, char *argv[] ){
     	exit(1);
     }
 
-    // Pega parametros
-    strcpy(user, argv[1]);  // User
-    strcpy(ip, argv[2]);    // Ip
+    // Leitura de parametros
+	if(strlen(argv[1]) > USER_NAME_SIZE) {
+		printf("Erro: tamanho de usuario precisa ser maior que %d\n", USER_NAME_SIZE);
+		exit(1);
+	} else {
+		strcpy(user_name, argv[1]);  // User
+	}
+	
+    host = malloc(strlen(argv[2])); // Host
     port = atoi(argv[3]);   //Port
 
-    // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
-	if((s = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-		printf("Falha na criacao do socket\n");
+    // Estabelece sessao entre cliente e servidor
+	if(login_server(host, port) == SUCCESS) {
+		//TODO: implementar
+	} else {
+		printf("[main] Erro ao estabelecer sessao em login_server\n");
 		exit(1);
- 	}
-
-    // Cria a estrutura com quem vai conversar 
-	peer.sin_family = AF_INET;
-	peer.sin_port = htons(port);
-	peer.sin_addr.s_addr = inet_addr(ip); 
-	peerlen = sizeof(peer);
-
-	// Envia pacotes Hello e aguarda resposta
-	while(1)
-	{
-		strcpy(buffer,"Hello");
-		sendto(s, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
-		printf("Enviado Hello\n");
-#ifdef _WIN32
-		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, &peerlen); 
-		printf("Recebido %s\n\n",&buffer);
-		Sleep(5000);
-#else
-		rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
-		printf("Recebido %s\n\n",&buffer);
-		sleep(5);
-#endif
 	}
 
 
