@@ -44,14 +44,14 @@ int login_server(char *host, int port) {
 		return ERROR;
  	}
 
-    // Cria a estrutura com quem vai conversar 
+    // Cria a estrutura com quem vai conversar
 	peer.sin_family = AF_INET;
 	peer.sin_port = htons(port);
-	peer.sin_addr.s_addr = inet_addr(host); 
+	peer.sin_addr.s_addr = inet_addr(host);
 	peerlen = sizeof(peer);
 
 	printf("Criado socket #%d\n", socket_id);
-	
+
 	//Executa o comando get_sync_dir
 	if(get_sync_dir() == SUCCESS) {
 		printf("Diretorio sincronizado com sucesso\n");
@@ -59,17 +59,17 @@ int login_server(char *host, int port) {
 		printf("Error ao sincronizar diretorio\n");
 		return ERROR;
 	}
-	
+
 	// Envia pacotes Hello e aguarda resposta
 	/*while(1) {
 		strcpy(buffer,"Hello");
 		sendto(socket_id, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Hello\n");
-		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen); 
+		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
 		printf("Recebido %s\n\n",&buffer);
 		sleep(5);
 	}*/
-	
+
 	return SUCCESS;
 
 }
@@ -94,11 +94,11 @@ int main(int argc, char *argv[] ){
 	} else {
 		strcpy(user_name, argv[1]);  // User
 	}
-	
-	
+
+
     host = malloc(strlen(argv[2])); // Host
 	strcpy(host, argv[2]);
-	
+
     port = atoi(argv[3]);   //Port
 
     // Estabelece sessao entre cliente e servidor
@@ -112,12 +112,19 @@ int main(int argc, char *argv[] ){
 	char line[100];
 
 	while(1) {
-		
+
 		scanf("%[^\n]", line);
 		getchar();
-		
+
 		populate_instruction(line, &command);
 		fflush(stdin);
+
+		sendto(socket_id, pacote, sizeof(pacote), 0, (struct sockaddr *)&peer, peerlen);
+		printf("Enviado Pacote\n");
+		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+		printf("Recebido %s\n\n",&buffer);
+
+		sleep(10);
 
 
 
@@ -144,14 +151,14 @@ int main(int argc, char *argv[] ){
 
 			#ifdef DEBUG
 			printf("fazer download...\n");
-			printf("command: %s\nfile name: %s\n\n", command, file_name);		
+			printf("command: %s\nfile name: %s\n\n", command, file_name);
 			#endif
 
 			//fazer download (continuar)
 
 		}
 		else if (strcmp(command, "list_server") == 0) {
-			
+
 			#ifdef DEBUG
 			printf("list_server\n");
 			#endif
