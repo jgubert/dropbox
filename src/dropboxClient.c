@@ -20,7 +20,7 @@
 #define BUFFER_SIZE 100
 
 #define ERROR -1
-#DEFINE SUCCESS 1
+#define SUCCESS 1
 
 char[USER_NAME_SIZE] user_name;
 int user_socket_id;
