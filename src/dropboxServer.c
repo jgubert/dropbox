@@ -77,8 +77,6 @@ int main(int argc, char *argv[]) {
 		printf("Quantidade de bytes recebidos: %ld\n", sizeof(pacote.buffer));
 
 
-
-
 		strcpy(buffer,"ACK");
 		sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
 	    printf("Enviado ACK\n\n");

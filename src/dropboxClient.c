@@ -96,6 +96,8 @@ int main(int argc, char *argv[] ){
 		strcpy(user_name, argv[1]);  // User
 	}
 
+	strcpy(pacote.username, user_name);
+	
 
     host = malloc(strlen(argv[2])); // Host
 	strcpy(host, argv[2]);
@@ -121,6 +123,10 @@ int main(int argc, char *argv[] ){
 		fflush(stdin);
 
 		// coloca a instrução no pacote
+		printf("printa aqui\n");
+		printf("%d\n", command.command_id);
+		printf("%s\n", command.path);
+
 		pacote.command = command;
 
 
