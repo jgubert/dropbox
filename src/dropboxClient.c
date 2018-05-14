@@ -19,6 +19,15 @@
 #define ERROR -1
 #define SUCCESS 1
 
+//estruturas que o usuario vai escolher
+#define UPLOAD 0
+#define DOWNLOAD 1
+#define LIST_SERVER 2
+#define LIST_CLIENT 3
+#define GET_SYNC_DIR 4
+#define EXIT 5
+
+
 char user_name[USER_NAME_SIZE];
 int user_socket_id;
 // teste
@@ -74,6 +83,30 @@ int login_server(char *host, int port) {
 	return SUCCESS;
 
 }
+
+/* colocar na interface
+
+void send_file(char *file){
+	ssize_t bytes_read = 0; //quantidade de bytes lido ate entao
+	ssize_t bytes_send = 0; //foi enviado ate entao
+	ssize_t file_size = 0;
+
+	int package_count = 0;
+	strcpy(buffer, file);
+	package_make();
+
+	sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
+	printf("Enviado Pacote\n");
+
+}
+
+void package_make(char line){
+	scanf("%[^\n]", line);
+	getchar();
+
+	populate_instruction(line, &pacote.command);
+	fflush(stdin);
+}  */
 
 int main(int argc, char *argv[] ){
     int port;
@@ -133,9 +166,9 @@ int main(int argc, char *argv[] ){
 
 		sleep(10);
 
-
-
 	}
+
+
 /*
 	// interface
 	char command[MAX_COMMAND_SIZE];

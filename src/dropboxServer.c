@@ -17,15 +17,18 @@
 
 
 #define SOCKET int
+struct client clientes[10];
+int semaforo = 0;
 
 void print_package(struct package pacote);
 
+
 int main(int argc, char *argv[]) {
 
-    struct  sockaddr_in peer;
+  struct  sockaddr_in peer;
 	SOCKET  s;
 	int port, peerlen, rc;
-    char buffer[100];
+  char buffer[100];
 
 	//Pega paramentro
 	if(argc < 2) {
@@ -61,6 +64,7 @@ int main(int argc, char *argv[]) {
     // Recebe pacotes do cliente e responde com string "ACK"
 	while (1)
 	{
+
 	    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
 
 		//rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
@@ -83,6 +87,58 @@ int main(int argc, char *argv[]) {
 	}
 
 }
+
+int client_count(char *user){
+    int x, cont = 0;
+
+    while (semaforo == 1){
+
+    }
+    semaforo = 1;
+    for (x = 0; x < 10; x++){
+        if (strcmp(user,clientes[x].userid) == 0 && clientes[x].logged_int == 1)
+            cont++;
+    }
+
+    printf("Cliente tem %d conexoes \n", cont);
+
+    semaforo = 0;
+
+    return cont;
+}
+
+
+/*void receive_file(char *file){
+	FILE* file_complete;
+	printf("Socket inicializado. Aguardando mensagens...\n\n");
+	ssize_t bytes_receive = 0; //quantidade de bytes recebidos ate entao
+	ssize_t bytes_send = 0; //foi enviado ate entao
+
+	//printf("Usuario %s enviou um pacote\n", client.userid);
+	char dir[100] = "sync_dir_";
+	//strcat(dir, client.userid);
+	strcat(dir, "/");
+
+	//receber o nome do arquivo que vai receber do cliente
+	//file_info.name = nome do arquivo
+
+
+	//strcat(dir, buffer);
+	bytes_receive = 0;
+	file_complete = fopen(dir, "w");
+	//zera buffer
+
+	//while ((bytes_receive = recv(s, buffer, BUFFER_SIZE, 0)) > 0){
+	//	fwrite(buffer, 1, bytes_receive, file_complete);
+	//	//zera buffer
+	//	if(bytes_receive < BUFFER_SIZE){
+	//		fclose(file_complete);
+	//		printf("SUCESSO");
+	//	}
+	//}
+
+
+}*/
 
 void create_path(char *user){
 

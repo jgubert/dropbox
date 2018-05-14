@@ -54,7 +54,7 @@ void populate_instruction(char line[], struct instruction *inst) {
 
   //PREENCHE PATH E FILENAME DO UPLOAD
   switch (comm_type) {
-    case 0:
+    case UPLOAD:
       line = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona
       printf("Nova linha: %s\n", line);
 
@@ -69,7 +69,7 @@ void populate_instruction(char line[], struct instruction *inst) {
       printf("Filename: %s\n", filename);
 
       break;
-    case 1:
+    case DOWNLOAD:
       line = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona
       printf("Nova linha: %s\n", line);
 
