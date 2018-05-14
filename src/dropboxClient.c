@@ -80,7 +80,6 @@ int main(int argc, char *argv[] ){
     char * host;
 
     struct package pacote; // pacote que será enviado
-    struct instruction command;
 
     if(argc < 4) {
     	printf("Utilizar:\n");
@@ -97,7 +96,7 @@ int main(int argc, char *argv[] ){
 	}
 
 	strcpy(pacote.username, user_name);
-	
+
 
     host = malloc(strlen(argv[2])); // Host
 	strcpy(host, argv[2]);
@@ -119,15 +118,10 @@ int main(int argc, char *argv[] ){
 		scanf("%[^\n]", line);
 		getchar();
 
-		populate_instruction(line, &command);
+		populate_instruction(line, &pacote.command);
 		fflush(stdin);
 
-		// coloca a instrução no pacote
-		printf("printa aqui\n");
-		printf("%d\n", command.command_id);
-		printf("%s\n", command.path);
-
-		pacote.command = command;
+		//pacote.command = command;
 
 
 		// envia o pacote

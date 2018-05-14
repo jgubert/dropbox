@@ -86,11 +86,9 @@ void populate_instruction(char line[], struct instruction *inst) {
       break;
   }
 
-
-
   inst->command_id = comm_type;
-  strcmp(inst->path, path);
-  strcmp(inst->filename, filename);
+  strcpy(inst->path, path);
+  strcpy(inst->filename, filename);
 
   return;
 }
