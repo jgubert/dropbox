@@ -8,7 +8,7 @@ struct instruction {
 
 struct package {
 	char username[20];
-	struct instruction *command;
+	struct instruction command;
 	char buffer[1250];
 };
 

@@ -64,10 +64,20 @@ int main(int argc, char *argv[]) {
 	    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
 
 		//rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
-		rc = recvfrom(s, &pacote, sizeof(pacote), 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
+		rc = recvfrom(s, &pacote, sizeof(struct package), 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
 		//printf("Recebido %s\n", &buffer);
 
-		printf_package(pacote);
+		//print_package(pacote);
+
+		printf("Usuario %s enviou um pacote\n", pacote.username);
+		printf("Informacoes da instrucao\n");
+		printf("%d\n", pacote.command.command_id);
+		printf("%s\n", pacote.command.path);
+		printf("%s\n", pacote.command.filename);
+		printf("Quantidade de bytes recebidos: %ld\n", sizeof(pacote.buffer));
+
+
+
 
 		strcpy(buffer,"ACK");
 		sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
@@ -95,8 +105,8 @@ void create_path(char *user){
 void print_package(struct package pacote) {
 	printf("Usuario %s enviou um pacote\n", pacote.username);
 	printf("Informacoes da instrucao\n");
-	printf("%d\n", pacote.command->command_id);
-	printf("%s\n", pacote.command->path);
-	printf("%s\n", pacote.command->filename);
+	printf("%d\n", pacote.command.command_id);
+	printf("%s\n", pacote.command.path);
+	printf("%s\n", pacote.command.filename);
 	printf("Quantidade de bytes recebidos: %ld\n", sizeof(pacote.buffer));
 }

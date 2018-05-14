@@ -121,11 +121,11 @@ int main(int argc, char *argv[] ){
 		fflush(stdin);
 
 		// coloca a instrução no pacote
-		pacote.command = &command;
+		pacote.command = command;
 
 
 		// envia o pacote
-		sendto(socket_id, &pacote, sizeof(pacote), 0, (struct sockaddr *)&peer, peerlen);
+		sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
 		printf("Enviado Pacote\n");
 		// recebe um ACK
 		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
