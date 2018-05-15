@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 
 #define SOCKET	int
 #define MAX_COMMAND_SIZE 15
@@ -37,8 +38,25 @@ int peerlen, rc;
 char buffer[BUFFER_SIZE];
 char buffer_receiver[BUFFER_SIZE];
 
-int get_sync_dir() {
+int get_sync_dir(){
 	//TODO implementar
+	return SUCCESS;
+}
+
+
+//FUNÇÃO PARA CRIAR A PASTA DO USUARIO
+int create_sync_dir() {
+	//TODO implementar
+	char dir_name[50] = "sync_dir_";
+
+	strcat(dir_name,user_name);
+
+	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
+		printf("Pasta %s criada.\n", dir_name);
+	else{
+		printf("Pasta %s já existe.\n", dir_name);
+		return ERROR;
+	}
 	return SUCCESS;
 }
 
@@ -62,6 +80,11 @@ int login_server(char *host, int port) {
 
 	printf("Criado socket #%d\n", socket_id);
 
+	//Cria pasta do usuario
+	if(create_sync_dir() == SUCCESS){
+		printf("Diretorio criado com sucesso\n");
+	}
+
 	//Executa o comando get_sync_dir
 	if(get_sync_dir() == SUCCESS) {
 		printf("Diretorio sincronizado com sucesso\n");
@@ -69,16 +92,6 @@ int login_server(char *host, int port) {
 		printf("Error ao sincronizar diretorio\n");
 		return ERROR;
 	}
-
-	// Envia pacotes Hello e aguarda resposta
-	/*while(1) {
-		strcpy(buffer,"Hello");
-		sendto(socket_id, buffer, sizeof(buffer), 0, (struct sockaddr *)&peer, peerlen);
-		printf("Enviado Hello\n");
-		rc = recvfrom(socket_id,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		printf("Recebido %s\n\n",&buffer);
-		sleep(5);
-	}*/
 
 	return SUCCESS;
 
@@ -131,10 +144,10 @@ int main(int argc, char *argv[] ){
 	strcpy(pacote.username, user_name);
 
 
-    host = malloc(strlen(argv[2])); // Host
+  host = malloc(strlen(argv[2])); // Host
 	strcpy(host, argv[2]);
 
-    port = atoi(argv[3]);   //Port
+  port = atoi(argv[3]);   //Port
 
     // Estabelece sessao entre cliente e servidor
 	if(login_server(host, port) == SUCCESS) {
@@ -155,6 +168,34 @@ int main(int argc, char *argv[] ){
 		fflush(stdin);
 
 		//pacote.command = command;
+
+		//FAZENDO UM TESTE NO CASO DO upload
+		//ideia é abrir testar se arquivo que quer enviar existe,
+		//caso exista coloca ele no buffer
+		if(pacote.command.command_id == 0){
+
+			fprintf(stderr, "Debug: Tentativa de ler arquivo!\n" );
+			FILE * arquivo;
+			char dir_name[100] = "sync_dir_";
+
+			strcat(dir_name,pacote.username);
+			strcat(dir_name,"/");
+			strcat(dir_name,pacote.command.path);
+			strcat(dir_name,pacote.command.filename);
+
+			printf("Arquivo: %s\n", dir_name);
+
+			arquivo = fopen("sync_dir_joao/path/teste.txt","r");
+		 	if (arquivo == NULL){
+		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
+				exit(1);
+			}
+
+			fread(pacote.buffer,1,1250,arquivo);
+
+			fclose(arquivo);
+
+		}
 
 
 		// envia o pacote
