@@ -128,6 +128,7 @@ void client_interface(struct package *pacote){
 			fprintf(stderr, "Debug: Tentativa de ler arquivo!\n" );
 			FILE * arquivo;
 			char dir_name[100] = "sync_dir_";
+			char dir_name2[100];
 
 			strcat(dir_name,pacote->username);
 			strcat(dir_name,"/");
@@ -136,7 +137,10 @@ void client_interface(struct package *pacote){
 
 			printf("Arquivo: %s\n", dir_name);
 
-			arquivo = fopen("sync_dir_joao/path/teste.txt","r");
+			snprintf( dir_name2,  sizeof(dir_name2), "%s", dir_name );
+
+			//arquivo = fopen("sync_dir_joao/path/teste.txt","r");
+			arquivo = fopen( dir_name2, "r");
 		 	if (arquivo == NULL){
 		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
 				exit(1);
