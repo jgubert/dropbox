@@ -18,7 +18,7 @@ struct client{
 
 int socket_create(char *host, int port);
 void sync_server();
-void receive_file(char *file, int s, char* user);
-void send_file2(char *file, int s, char* user); //ta com o mesmo nome de outra funcao
+//void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen);
+//void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen); //ta com o mesmo nome de outra funcao
 void create_path(char *user);
 int client_count(char *user);

@@ -20,6 +20,9 @@
 struct client clientes[10];
 int semaforo = 0;
 
+void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen);
+void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen);
+
 void print_package(struct package pacote);
 
 
@@ -107,7 +110,7 @@ int client_count(char *user){
     return cont;
 }
 
-void receive_file(char *file, int s, char* user){
+void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen){
 	FILE* file_complete;
 
   ssize_t bytes_receive = 0;
@@ -117,12 +120,11 @@ void receive_file(char *file, int s, char* user){
 	strcat(dir, user);
 	strcat(dir, "/");
 
-  while((bytes_receive = recv(s, buffer, sizeof(buffer),0)) < 0){} //nome do arquivo
-
+  while((bytes_receive = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen)) < 0){} //nome do arquivo
 	strcat(dir, buffer);
 	file_complete = fopen(dir, "w");
 
-  while((bytes_receive = recv(s, buffer, 1250, 0)) > 0){
+  while((bytes_receive = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen)) > 0){
     if (bytes_receive < 0) { // Se a quantidade de bytes recebidos for menor que 0, deu erro
         printf("Erro\n");
         fclose(file_complete);
@@ -135,7 +137,7 @@ void receive_file(char *file, int s, char* user){
 }
 
 
-void send_file2(char *file, int s, char* user){
+void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
 
     char dir[200] = "sync_dir_";
     strcat(dir,user);
@@ -146,7 +148,7 @@ void send_file2(char *file, int s, char* user){
     ssize_t bytes_read;
     FILE* file_complete;
 
-    bytes_send = recv(s, buffer, 1250, 0);
+    bytes_send = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
     if (bytes_send < 0)
         printf("Erro\n");
 
@@ -158,7 +160,8 @@ void send_file2(char *file, int s, char* user){
     }
 
     while ((bytes_read = fread(buffer, 1,sizeof(buffer), file_complete)) > 0){
-        if ((bytes_send = send(s,buffer,bytes_read,0)) < bytes_read) { // Se a quantidade de bytes enviados, não for igual a que a gente leu, erro
+        if ((bytes_send = sendto(s, buffer, bytes_read, 0, (struct sockaddr *)&peer, peerlen)) < bytes_read) { // Se a quantidade de bytes enviados, não for igual a que a gente leu, erro
+
             printf("Erro\n");
             return;
         }
