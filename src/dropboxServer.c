@@ -20,8 +20,9 @@
 struct client clientes[10];
 int semaforo = 0;
 
-void receive_file(int s, struct package pacote, struct sockaddr_in peer, int peerlen);
-void send_file2(int s, struct package pacote, struct sockaddr_in peer, int peerlen);
+void receive_file(int s, struct sockaddr_in peer, int peerlen);
+void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen);
+struct package create_package(int s, struct sockaddr_in peer, int peerlen);
 
 void print_package(struct package pacote);
 
@@ -30,8 +31,7 @@ int main(int argc, char *argv[]) {
 
   struct  sockaddr_in peer;
 	SOCKET  s;
-	int port, peerlen, rc;
-  char buffer[100];
+	int port, peerlen;
 
 	//Pega paramentro
 	if(argc < 2) {
@@ -62,34 +62,40 @@ int main(int argc, char *argv[]) {
 	}
 
     printf("Socket inicializado. Aguardando mensagens...\n\n");
-
-    struct package pacote;
-    // Recebe pacotes do cliente e responde com string "ACK"
-	while (1)
-	{
-
-	    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
-
-		//rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
-		rc = recvfrom(s, &pacote, sizeof(struct package), 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
-		//printf("Recebido %s\n", &buffer);
-
-		//print_package(pacote);
-
-		printf("Usuario %s enviou um pacote\n", pacote.username);
-		printf("Informacoes da instrucao\n");
-		printf("%d\n", pacote.command.command_id);
-		printf("%s\n", pacote.command.path);
-		printf("%s\n", pacote.command.filename);
-		printf("Quantidade de bytes recebidos: %ld\n", sizeof(pacote.buffer));
-
-
-		strcpy(buffer,"ACK");
-		sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
-	    printf("Enviado ACK\n\n");
-	}
+    receive_file(s, peer, peerlen);
 
 }
+
+struct package create_package(int s, struct sockaddr_in peer, int peerlen){
+  char buffer[100];
+  int rc;
+  struct package pacote;
+  // Recebe pacotes do cliente e responde com string "ACK"
+  while (1)
+  {
+    // Quando recebe um pacote, automaticamente atualiza o IP da estrutura peer
+
+    //rc = recvfrom(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer,(socklen_t *)&peerlen);
+    rc = recvfrom(s, &pacote, sizeof(struct package), 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
+    //printf("Recebido %s\n", &buffer);
+
+    //print_package(pacote);
+
+    printf("Usuario %s enviou um pacote\n", pacote.username);
+    printf("Informacoes da instrucao\n");
+    printf("%d\n", pacote.command.command_id);
+    printf("%s\n", pacote.command.path);
+    printf("%s\n", pacote.command.filename);
+    printf("Quantidade de bytes recebidos: %ld\n", sizeof(pacote.buffer));
+
+
+    strcpy(buffer,"ACK");
+    sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
+    printf("Enviado ACK\n\n");
+  }
+  return pacote;
+}
+
 
 int client_count(char *user){
     int x, cont = 0;
@@ -110,35 +116,29 @@ int client_count(char *user){
     return cont;
 }
 
-void receive_file(int s, struct package pacote, struct sockaddr_in peer, int peerlen){
-	FILE* file_complete;
+void receive_file(int s, struct sockaddr_in peer, int peerlen){
+  struct package pack = create_package(s, peer, peerlen);
+
+  FILE* file_complete;
   ssize_t bytes_receive = 0;
 
   char buffer[1250];
 
 	char dir[100] = "sync_dir_";
-	strcat(dir, pacote.username);
+	strcat(dir, pack.username);
 	strcat(dir, "/");
-  strcat(dir, pacote.command.filename);
+  strcat(dir, pack.command.filename);
 	file_complete = fopen(dir, "w");
 
-  while((bytes_receive = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen)) > 0){
-    if (bytes_receive < 0) { // Se a quantidade de bytes recebidos for menor que 0, deu erro
-        printf("Erro\n");
-        fclose(file_complete);
-        return;
-    }
-  }
-
-  fwrite(buffer, 1, bytes_receive, file_complete);
+  fwrite(pack.buffer, 1, sizeof(pack.buffer), file_complete);
   fclose(file_complete);
 }
 
 
-void send_file2(int s, struct package pacote, struct sockaddr_in peer, int peerlen){
+void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
 
     char dir[200] = "sync_dir_";
-    strcat(dir,pacote.username);
+    strcat(dir,user);
     strcat(dir,"/");
 
     char buffer[1250];
@@ -146,7 +146,9 @@ void send_file2(int s, struct package pacote, struct sockaddr_in peer, int peerl
     ssize_t bytes_read;
     FILE* file_complete;
 
-    strcat(dir,pacote.command.filename);
+    bytes_send = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
+      if (bytes_send < 0) printf("Erro\n");
+      strcat(dir,buffer);
 
     if ((file_complete = fopen(dir, "r")) == NULL) {
         printf("Erro \n");
