@@ -1,6 +1,8 @@
 #include "../include/dropboxUtil.h"
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #define ERROR -1
 #define UPLOAD 0
@@ -36,6 +38,47 @@ int getCommand_id(char *command){
     return ERROR;
 
 }
+
+void list_server(char* user, int socket_id) {
+
+     DIR *dir;
+     struct dirent *ent;
+     ssize_t bytes_send;
+
+     char user_dir[100] = "sync_dir_";
+     strcat(user_dir, user);
+     strcat(user_dir, "/");
+
+     char userFiles[1250] = "";
+
+     if ((dir = opendir (user_dir)) != NULL) {
+         printf("Lendo diretorio do cliente\n");
+
+         while ((ent = readdir (dir)) != NULL) {
+            // estrutura do struct dirent -> char   d_name[]   Name of entry
+             if((strcmp(ent->d_name,".") != 0 && strcmp(ent->d_name,"..") != 0)) {
+                 strcat(userFiles, ent->d_name);
+                 strcat(userFiles, "\n");
+             }
+         }
+
+         if (strcmp(userFiles, "") == 0) {
+             strcat(userFiles, "Nao existem arquivos\n");
+         }
+         strcat(userFiles, "\0");
+
+         closedir (dir);
+
+         if ((bytes_send = send(socket_id, userFiles, 1250, 0)) < 0) {
+             printf("Erro\n");
+             return;
+         }
+
+     } else {
+         printf("Erro\n");
+     }
+     printf("Sucesso\n");
+ }
 
 void populate_instruction(char line[], struct instruction *inst) {
 

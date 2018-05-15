@@ -15,3 +15,4 @@ struct package {
 
 int getCommand_id(char *command);
 void populate_instruction(char line[], struct instruction *inst);
+void list_server(char* user, int socket_id);
