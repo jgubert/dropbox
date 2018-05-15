@@ -18,8 +18,13 @@
 #define SUCCESS 1
 #define ERROR -1
 #define SOCKET int
+#define BUFFER_SIZE 12500
+
+#define GET_SYNC_DIR 4
+
 struct client clientes[10];
 int semaforo = 0;
+char buffer[BUFFER_SIZE];
 
 void receive_file(int s, struct sockaddr_in peer, int peerlen);
 void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen);
@@ -66,8 +71,34 @@ int main(int argc, char *argv[]) {
     printf("Socket inicializado. Aguardando mensagens...\n\n");
 
     create_database_structure();
+	printf("Criou database!\n\n");
+
+	// ------------ TESTANDO GET_SYNC_DIR ----------
+	ssize_t teste;
+
+	struct client cliente;
+
+	teste = recvfrom(s, &cliente, 12500, 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
+	
+	strcpy(buffer,"ACK");
+    sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
+	
+	if(cliente.command_id == GET_SYNC_DIR){
+
+		create_path(cliente.userid);
+	
+	}
+
+	// ------------ FIM TESTE ----------------------
+
+	sleep(10);
 
     receive_file(s, peer, peerlen);
+
+
+
+
+	return 0;
 
 }
 
@@ -77,6 +108,8 @@ int create_database_structure() {
 
 	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
 		//printf("Pasta %s criada.\n", dir_name);
+	
+{}
 	else{
 		//printf("Pasta %s já existe.\n", dir_name);
 		return ERROR;
@@ -86,7 +119,7 @@ int create_database_structure() {
 }
 
 struct package create_package(int s, struct sockaddr_in peer, int peerlen){
-  char buffer[100];
+  char buffer[1250];
   int rc;
   struct package pacote;
   // Recebe pacotes do cliente e responde com string "ACK"
@@ -186,17 +219,14 @@ void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
 void create_path(char *user){
 
 	struct stat st = {0};
-	char dir[50] = "sync_dir_";
+	char dir[50] = "database/sync_dir_";
 	strcat(dir, user);
 
-	if(stat(dir, &st) != 0){
-		mkdir(dir, 07777);
-		printf("pasta criada para user %s", user);
-	}
+	if(mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
+		printf("Pasta %s criada.\n", dir);
+	else printf("Pasta %s já existe.\n",dir);
 
-	else{
-		printf("ja existe pasta para user %s", user);
-	}
+	return;
 }
 
 void print_package(struct package pacote) {

@@ -15,7 +15,7 @@
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
 #define USER_NAME_SIZE 25
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 12500
 
 #define ERROR -1
 #define SUCCESS 1
@@ -38,8 +38,26 @@ int peerlen, rc;
 char buffer[BUFFER_SIZE];
 char buffer_receiver[BUFFER_SIZE];
 
+int get_sync_dir();
+
 int get_sync_dir(){
 	//TODO implementar
+	//envia um pacote com as informações do cliente
+
+	struct client cliente;
+
+	strcpy(cliente.userid,user_name);
+	cliente.logged_int = 1;
+	cliente.command_id = 4; //4 É O CODIGO DA GET_SYNC_DIR
+
+
+	//enviando "cliente" pro servidor criar a pasta do usuario
+		sendto(socket_id, &cliente, 12500, 0, (struct sockaddr *)&peer, peerlen);
+		printf("Enviado cliente na função get_sync_dir\n");
+		// recebe um ACK
+		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+		printf("Recebido ACK na função get_sync_dir%s\n\n",&buffer_receiver);
+
 	return SUCCESS;
 }
 
@@ -127,24 +145,42 @@ void client_interface(struct package *pacote){
 		case 0:
 			fprintf(stderr, "Debug: Tentativa de ler arquivo!\n" );
 			FILE * arquivo;
-			char dir_name[100] = "sync_dir_";
-			char dir_name2[100];
+			char dir_name[100];
+			char * dir_name2;
+			bzero(dir_name,100);
 
-			strcat(dir_name,pacote->username);
-			strcat(dir_name,"/");
-			strcat(dir_name,pacote->command.path);
-			strcat(dir_name,pacote->command.filename);
+			memset(dir_name2,0,sizeof(dir_name2));
+
+			printf("pos bzero: %s\n", dir_name);
+			printf("dirname2: %s\n", dir_name2);
+			
+			strcat(dir_name2,"sync_dir_");
+			printf("dirname2: %s\n", dir_name2);
+			strcat(dir_name2,pacote->username);
+			printf("dirname2: %s\n", dir_name2);
+			strcat(dir_name2,"/");
+			printf("dirname2: %s\n", dir_name2);
+			strcat(dir_name2,pacote->command.path);
+			strcat(dir_name2,pacote->command.filename);
+
+			strcat(dir_name,dir_name2);
+
+			//strcpy(dir_name,"sync_dir_joao/path/teste.txt");
 
 			printf("Arquivo: %s\n", dir_name);
 
-			snprintf( dir_name2,  sizeof(dir_name2), "%s", dir_name );
+			//snprintf( dir_name2,  sizeof(dir_name), "%s", dir_name );
 
-			//arquivo = fopen("sync_dir_joao/path/teste.txt","r");
-			arquivo = fopen( dir_name2, "r");
+			//printf("Arquivo: %s\n", dir_name2);
+
+			arquivo = fopen("sync_dir_joao/path/teste.txt","r");
+			//arquivo = fopen(dir_name, "r");
 		 	if (arquivo == NULL){
 		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
 				exit(1);
 			}
+
+			fprintf(stderr, "Debug: ABRIU ESSE CARALHO\n" );
 
 			fread(pacote->buffer,1,1250,arquivo);
 
@@ -211,6 +247,7 @@ int main(int argc, char *argv[] ){
 
 		client_interface(&pacote);
 
+		//send_file();
 
 		// envia o pacote
 		sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
@@ -223,77 +260,4 @@ int main(int argc, char *argv[] ){
 
 	}
 
-
-/*
-	// interface
-	char command[MAX_COMMAND_SIZE];
-
-	// mais tarde, botar esse loop em uma função
-	while (1) {
-		scanf("%s", command);
-
-		if (strcmp(command, "upload") == 0) {
-			#ifdef DEBUG
-			printf("fazer upload\n");
-			#endifO
-			// fazer upload (continuar)
-
-		}
-		else if (strcmp(command, "download") == 0) {
-
-			char file_name[MAX_FILE_NAME_SIZE];
-			scanf("%s", file_name);
-
-			#ifdef DEBUG
-			printf("fazer download...\n");
-			printf("command: %s\nfile name: %s\n\n", command, file_name);
-			#endif
-
-			//fazer download (continuar)
-
-		}
-		else if (strcmp(command, "list_server") == 0) {
-
-			#ifdef DEBUG
-			printf("list_server\n");
-			#endif
-
-			// listar os arquivos do usuário salvos no servidor (continuar)
-		}
-		else if (strcmp(command, "list_client") == 0) {
-
-			#ifdef DEBUG
-			printf("list_client\n");
-			#endif
-
-			// listar arquivos salvos no diretorio "sync_dir_<nomeusuário>" (continuar)
-
-		}
-		else if (strcmp(command, "get_sync_dir") == 0) {
-
-			#ifdef DEBUG
-			printf("get_sync_dir\n");
-			#endif
-
-			//Cria o diretório sync_dir_<nomeusuário no /home do usuario (continuar)
-
-		}
-		else if (strcmp(command, "exit") == 0) {
-
-			#ifdef DEBUG
-			printf("exit\n");
-			#endif
-
-			// fecha a sessão com o usuário (continuar)
-
-			return 0;
-		}
-		else {
-			printf("erro\n");
-			return 1;
-		}
-
-	}
-    return 0;
-*/
 }
