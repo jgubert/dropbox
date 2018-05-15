@@ -107,38 +107,65 @@ int client_count(char *user){
     return cont;
 }
 
-
-/*void receive_file(char *file){
+void receive_file(char *file, int s, char* user){
 	FILE* file_complete;
-	printf("Socket inicializado. Aguardando mensagens...\n\n");
-	ssize_t bytes_receive = 0; //quantidade de bytes recebidos ate entao
-	ssize_t bytes_send = 0; //foi enviado ate entao
 
-	//printf("Usuario %s enviou um pacote\n", client.userid);
+  ssize_t bytes_receive = 0;
+  char buffer[1250];
+
 	char dir[100] = "sync_dir_";
-	//strcat(dir, client.userid);
+	strcat(dir, user);
 	strcat(dir, "/");
 
-	//receber o nome do arquivo que vai receber do cliente
-	//file_info.name = nome do arquivo
+  while((bytes_receive = recv(s, buffer, sizeof(buffer),0)) < 0){} //nome do arquivo
 
-
-	//strcat(dir, buffer);
-	bytes_receive = 0;
+	strcat(dir, buffer);
 	file_complete = fopen(dir, "w");
-	//zera buffer
 
-	//while ((bytes_receive = recv(s, buffer, BUFFER_SIZE, 0)) > 0){
-	//	fwrite(buffer, 1, bytes_receive, file_complete);
-	//	//zera buffer
-	//	if(bytes_receive < BUFFER_SIZE){
-	//		fclose(file_complete);
-	//		printf("SUCESSO");
-	//	}
-	//}
+  while((bytes_receive = recv(s, buffer, 1250, 0)) > 0){
+    if (bytes_receive < 0) { // Se a quantidade de bytes recebidos for menor que 0, deu erro
+        printf("Erro\n");
+        fclose(file_complete);
+        return;
+    }
+  }
+
+  fwrite(buffer, 1, bytes_receive, file_complete);
+  fclose(file_complete);
+}
 
 
-}*/
+void send_file2(char *file, int s, char* user){
+
+    char dir[200] = "sync_dir_";
+    strcat(dir,user);
+    strcat(dir,"/");
+
+    char buffer[1250];
+    ssize_t bytes_send;
+    ssize_t bytes_read;
+    FILE* file_complete;
+
+    bytes_send = recv(s, buffer, 1250, 0);
+    if (bytes_send < 0)
+        printf("Erro\n");
+
+    strcat(dir,buffer);
+
+    if ((file_complete = fopen(dir, "r")) == NULL) {
+        printf("Erro \n");
+        return;
+    }
+
+    while ((bytes_read = fread(buffer, 1,sizeof(buffer), file_complete)) > 0){
+        if ((bytes_send = send(s,buffer,bytes_read,0)) < bytes_read) { // Se a quantidade de bytes enviados, não for igual a que a gente leu, erro
+            printf("Erro\n");
+            return;
+        }
+    }
+
+    fclose(file_complete);
+}
 
 void create_path(char *user){
 
