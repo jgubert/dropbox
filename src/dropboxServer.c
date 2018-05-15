@@ -20,8 +20,8 @@
 struct client clientes[10];
 int semaforo = 0;
 
-void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen);
-void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen);
+void receive_file(int s, struct package pacote, struct sockaddr_in peer, int peerlen);
+void send_file2(int s, struct package pacote, struct sockaddr_in peer, int peerlen);
 
 void print_package(struct package pacote);
 
@@ -110,18 +110,16 @@ int client_count(char *user){
     return cont;
 }
 
-void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen){
+void receive_file(int s, struct package pacote, struct sockaddr_in peer, int peerlen){
 	FILE* file_complete;
-
   ssize_t bytes_receive = 0;
+
   char buffer[1250];
 
 	char dir[100] = "sync_dir_";
-	strcat(dir, user);
+	strcat(dir, pacote.username);
 	strcat(dir, "/");
-
-  while((bytes_receive = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen)) < 0){} //nome do arquivo
-	strcat(dir, buffer);
+  strcat(dir, pacote.command.filename);
 	file_complete = fopen(dir, "w");
 
   while((bytes_receive = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen)) > 0){
@@ -137,10 +135,10 @@ void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen){
 }
 
 
-void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
+void send_file2(int s, struct package pacote, struct sockaddr_in peer, int peerlen){
 
     char dir[200] = "sync_dir_";
-    strcat(dir,user);
+    strcat(dir,pacote.username);
     strcat(dir,"/");
 
     char buffer[1250];
@@ -148,11 +146,7 @@ void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
     ssize_t bytes_read;
     FILE* file_complete;
 
-    bytes_send = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
-    if (bytes_send < 0)
-        printf("Erro\n");
-
-    strcat(dir,buffer);
+    strcat(dir,pacote.command.filename);
 
     if ((file_complete = fopen(dir, "r")) == NULL) {
         printf("Erro \n");
