@@ -121,6 +121,41 @@ void package_make(char line){
 	fflush(stdin);
 }  */
 
+void client_interface(struct package *pacote){
+
+	switch (pacote->command.command_id) {
+		case 0:
+			fprintf(stderr, "Debug: Tentativa de ler arquivo!\n" );
+			FILE * arquivo;
+			char dir_name[100] = "sync_dir_";
+
+			strcat(dir_name,pacote->username);
+			strcat(dir_name,"/");
+			strcat(dir_name,pacote->command.path);
+			strcat(dir_name,pacote->command.filename);
+
+			printf("Arquivo: %s\n", dir_name);
+
+			arquivo = fopen("sync_dir_joao/path/teste.txt","r");
+		 	if (arquivo == NULL){
+		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
+				exit(1);
+			}
+
+			fread(pacote->buffer,1,1250,arquivo);
+
+			fclose(arquivo);
+			break;
+
+		default:
+			break;
+
+	}
+
+
+
+}
+
 int main(int argc, char *argv[] ){
     int port;
     char * host;
@@ -172,30 +207,8 @@ int main(int argc, char *argv[] ){
 		//FAZENDO UM TESTE NO CASO DO upload
 		//ideia é abrir testar se arquivo que quer enviar existe,
 		//caso exista coloca ele no buffer
-		if(pacote.command.command_id == 0){
 
-			fprintf(stderr, "Debug: Tentativa de ler arquivo!\n" );
-			FILE * arquivo;
-			char dir_name[100] = "sync_dir_";
-
-			strcat(dir_name,pacote.username);
-			strcat(dir_name,"/");
-			strcat(dir_name,pacote.command.path);
-			strcat(dir_name,pacote.command.filename);
-
-			printf("Arquivo: %s\n", dir_name);
-
-			arquivo = fopen("sync_dir_joao/path/teste.txt","r");
-		 	if (arquivo == NULL){
-		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
-				exit(1);
-			}
-
-			fread(pacote.buffer,1,1250,arquivo);
-
-			fclose(arquivo);
-
-		}
+		client_interface(&pacote);
 
 
 		// envia o pacote
