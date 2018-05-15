@@ -155,9 +155,6 @@ void client_interface(struct package *pacote){
 			break;
 
 	}
-
-
-
 }
 
 int main(int argc, char *argv[] ){

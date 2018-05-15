@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+#define ERROR -1
+#define SUCCESS 1
+
 struct instruction {
 	int command_id;
 	char path[70];

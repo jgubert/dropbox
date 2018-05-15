@@ -1,10 +1,5 @@
 #include <stdio.h>
 
-#define MAXNAMES 8
-#define MAXNAME 8
-#define MAXFILES 10
-
-
 int login_server(char *host, int port);
 void sync_client();
 void send_file(char *file);

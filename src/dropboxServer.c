@@ -15,7 +15,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-
+#define SUCCESS 1
+#define ERROR -1
 #define SOCKET int
 struct client clientes[10];
 int semaforo = 0;
@@ -25,6 +26,7 @@ void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen);
 struct package create_package(int s, struct sockaddr_in peer, int peerlen);
 
 void print_package(struct package pacote);
+int create_database_structure();
 
 
 int main(int argc, char *argv[]) {
@@ -62,7 +64,24 @@ int main(int argc, char *argv[]) {
 	}
 
     printf("Socket inicializado. Aguardando mensagens...\n\n");
+
+    create_database_structure();
+
     receive_file(s, peer, peerlen);
+
+}
+
+int create_database_structure() {
+
+	char dir_name[20] = "database";
+
+	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
+		//printf("Pasta %s criada.\n", dir_name);
+	else{
+		//printf("Pasta %s já existe.\n", dir_name);
+		return ERROR;
+	}
+	return SUCCESS;
 
 }
 
@@ -96,6 +115,23 @@ struct package create_package(int s, struct sockaddr_in peer, int peerlen){
   return pacote;
 }
 
+void receive_file(int s, struct sockaddr_in peer, int peerlen){
+  	struct package pack = create_package(s, peer, peerlen);
+
+  	FILE* file_complete;
+  	ssize_t bytes_receive = 0;
+
+  	char buffer[1250];
+
+	char dir[100] = "sync_dir_";
+	strcat(dir, pack.username);
+	strcat(dir, "/");
+  	strcat(dir, pack.command.filename);
+	file_complete = fopen(dir, "w");
+
+  	fwrite(pack.buffer, 1, sizeof(pack.buffer), file_complete);
+  	fclose(file_complete);
+}
 
 int client_count(char *user){
     int x, cont = 0;
@@ -115,25 +151,6 @@ int client_count(char *user){
 
     return cont;
 }
-
-void receive_file(int s, struct sockaddr_in peer, int peerlen){
-  struct package pack = create_package(s, peer, peerlen);
-
-  FILE* file_complete;
-  ssize_t bytes_receive = 0;
-
-  char buffer[1250];
-
-	char dir[100] = "sync_dir_";
-	strcat(dir, pack.username);
-	strcat(dir, "/");
-  strcat(dir, pack.command.filename);
-	file_complete = fopen(dir, "w");
-
-  fwrite(pack.buffer, 1, sizeof(pack.buffer), file_complete);
-  fclose(file_complete);
-}
-
 
 void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
 
