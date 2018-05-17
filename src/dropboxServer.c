@@ -26,9 +26,9 @@ struct client clientes[10];
 int semaforo = 0;
 char buffer[BUFFER_SIZE];
 
-void receive_file(int s, struct sockaddr_in peer, int peerlen);
-void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen);
-struct package create_package(int s, struct sockaddr_in peer, int peerlen);
+void receive_file(int s, struct sockaddr* peer, int peerlen);
+void send_file2(int s, char* user, struct sockaddr* peer, int peerlen);
+struct package create_package(int s, struct sockaddr * peer, int peerlen);
 
 void print_package(struct package pacote);
 int create_database_structure();
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
   struct  sockaddr_in peer;
 	SOCKET  s;
-	int port, peerlen;
+	int port, peerlen, n;
 
 	//Pega paramentro
 	if(argc < 2) {
@@ -74,14 +74,29 @@ int main(int argc, char *argv[]) {
 	printf("Criou database!\n\n");
 
 	// ------------ TESTANDO GET_SYNC_DIR ----------
+	
+	while(1) {
 	ssize_t teste;
 
 	struct client cliente;
 
+	printf("Esperando pacote!\n");
+
 	teste = recvfrom(s, &cliente, 12500, 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
-	
+		
+
 	strcpy(buffer,"ACK");
-    sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *)&peer, peerlen);
+
+	if(teste != -1)
+		printf("Pacote recebido! %d\n", teste);
+	else{	
+		printf("Pacote não recebido!\n");
+	}
+	//sleep(1);
+    n = sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer, peerlen);
+	if(n < 0){
+		printf("Erro no envio do ACK!\n");
+	}
 	
 	if(cliente.command_id == GET_SYNC_DIR){
 
@@ -89,14 +104,12 @@ int main(int argc, char *argv[]) {
 	
 	}
 
+}
+	
 	// ------------ FIM TESTE ----------------------
 
-	sleep(10);
 
-    receive_file(s, peer, peerlen);
-
-
-
+    receive_file(s, (struct sockaddr *) &peer, peerlen);
 
 	return 0;
 
@@ -118,7 +131,7 @@ int create_database_structure() {
 
 }
 
-struct package create_package(int s, struct sockaddr_in peer, int peerlen){
+struct package create_package(int s, struct sockaddr * peer, int peerlen){
   char buffer[1250];
   int rc;
   struct package pacote;
@@ -148,7 +161,7 @@ struct package create_package(int s, struct sockaddr_in peer, int peerlen){
   return pacote;
 }
 
-void receive_file(int s, struct sockaddr_in peer, int peerlen){
+void receive_file(int s, struct sockaddr* peer, int peerlen){
   	struct package pack = create_package(s, peer, peerlen);
 
   	FILE* file_complete;
@@ -185,7 +198,7 @@ int client_count(char *user){
     return cont;
 }
 
-void send_file2(int s, char* user, struct sockaddr_in peer, int peerlen){
+void send_file2(int s, char* user, struct sockaddr * peer, int peerlen){
 
     char dir[200] = "sync_dir_";
     strcat(dir,user);

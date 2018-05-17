@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #define SOCKET	int
 #define MAX_COMMAND_SIZE 15
@@ -40,25 +41,44 @@ char buffer_receiver[BUFFER_SIZE];
 
 int get_sync_dir();
 
+
+
 int get_sync_dir(){
 	//TODO implementar
 	//envia um pacote com as informações do cliente
 
 	struct client cliente;
 
-	strcpy(cliente.userid,user_name);
+	//strcpy(cliente.userid,user_name);
+	memcpy(cliente.userid, user_name, sizeof(user_name));
 	cliente.logged_int = 1;
 	cliente.command_id = 4; //4 É O CODIGO DA GET_SYNC_DIR
 
 
 	//enviando "cliente" pro servidor criar a pasta do usuario
-		sendto(socket_id, &cliente, 12500, 0, (struct sockaddr *)&peer, peerlen);
-		printf("Enviado cliente na função get_sync_dir\n");
+	while(1) {
+		printf("Tentando enviar\n");
+		int sendToResponse = sendto(socket_id, &cliente, 12500, 0, (struct sockaddr *)&peer, peerlen);
+		printf("Sendto: %d\n", sendToResponse);
+		if(sendToResponse < 0) {
+			printf("Falha ao enviar\n");
+		} else {
+			printf("Enviado! ");		
+			printf("Numero de bytes: %d \n", sendToResponse);	
+		}
 		// recebe um ACK
-		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		printf("Recebido ACK na função get_sync_dir%s\n\n",&buffer_receiver);
 
-	return SUCCESS;
+		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+		
+		printf("RC: %d\n", rc);
+		if(rc > 0) {
+			printf("Recebido ACK na função get_sync_dir%s\n\n",&buffer_receiver);
+			return SUCCESS;
+		} else {
+			printf("Timeout no request!\n");
+		}
+	}
+	
 }
 
 
@@ -79,10 +99,12 @@ int create_sync_dir() {
 }
 
 int login_server(char *host, int port) {
-    //struct sockaddr_in peer;
-    //SOCKET socket_id;
-    //int peerlen, rc;
-    //char buffer[BUFFER_SIZE];
+
+	// Timeout de 1 segundo
+	struct timeval tv;	
+	tv.tv_sec = 1;
+	tv.tv_usec = 100000;
+
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
@@ -97,6 +119,12 @@ int login_server(char *host, int port) {
 	peerlen = sizeof(peer);
 
 	printf("Criado socket #%d\n", socket_id);
+
+	
+	//Setando TimeOut
+	if (setsockopt(socket_id, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+		perror("Error");
+	}
 
 	//Cria pasta do usuario
 	if(create_sync_dir() == SUCCESS){
@@ -147,6 +175,7 @@ void client_interface(struct package *pacote){
 			FILE * arquivo;
 			char dir_name[100];
 			char * dir_name2;
+
 			bzero(dir_name,100);
 
 			memset(dir_name2,0,sizeof(dir_name2));
@@ -194,6 +223,7 @@ void client_interface(struct package *pacote){
 }
 
 int main(int argc, char *argv[] ){
+
     int port;
     char * host;
 
