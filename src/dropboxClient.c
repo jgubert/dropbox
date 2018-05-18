@@ -49,8 +49,8 @@ int get_sync_dir(){
 
 	struct client cliente;
 
-	//strcpy(cliente.userid,user_name);
-	memcpy(cliente.userid, user_name, sizeof(user_name));
+	memcpy(cliente.userid,user_name,sizeof(user_name));
+	printf("%s\n", cliente.userid);
 	cliente.logged_int = 1;
 	cliente.command_id = 4; //4 É O CODIGO DA GET_SYNC_DIR
 
@@ -182,7 +182,7 @@ void client_interface(struct package *pacote){
 
 			printf("pos bzero: %s\n", dir_name);
 			printf("dirname2: %s\n", dir_name2);
-			
+
 			strcat(dir_name2,"sync_dir_");
 			printf("dirname2: %s\n", dir_name2);
 			strcat(dir_name2,pacote->username);
@@ -202,7 +202,7 @@ void client_interface(struct package *pacote){
 
 			//printf("Arquivo: %s\n", dir_name2);
 
-			arquivo = fopen("sync_dir_joao/path/teste.txt","r");
+			arquivo = fopen(dir_name,"r");
 			//arquivo = fopen(dir_name, "r");
 		 	if (arquivo == NULL){
 		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
