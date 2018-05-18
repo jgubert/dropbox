@@ -102,7 +102,7 @@ int login_server(char *host, int port) {
 
 	// Timeout de 1 segundo
 	struct timeval tv;	
-	tv.tv_sec = 1;
+	tv.tv_sec = 0;
 	tv.tv_usec = 100000;
 
 
