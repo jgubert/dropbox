@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 	printf("Criou database!\n\n");
 
 	// ------------ TESTANDO GET_SYNC_DIR ----------
-	
+
 	while(1) {
 	ssize_t teste;
 
@@ -83,13 +83,13 @@ int main(int argc, char *argv[]) {
 	printf("Esperando pacote!\n");
 
 	teste = recvfrom(s, &cliente, 12500, 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
-		
+
 
 	strcpy(buffer,"ACK");
 
 	if(teste != -1)
-		printf("Pacote recebido! %d\n", teste);
-	else{	
+		printf("Pacote recebido! %zd\n", teste);
+	else{
 		printf("Pacote não recebido!\n");
 	}
 	//sleep(1);
@@ -97,15 +97,15 @@ int main(int argc, char *argv[]) {
 	if(n < 0){
 		printf("Erro no envio do ACK!\n");
 	}
-	
-	if(cliente.command_id == GET_SYNC_DIR){
 
+	if(cliente.command_id == GET_SYNC_DIR){
+printf("%s\n", cliente.userid);
 		create_path(cliente.userid);
-	
+
 	}
 
 }
-	
+
 	// ------------ FIM TESTE ----------------------
 
 
@@ -121,7 +121,7 @@ int create_database_structure() {
 
 	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
 		//printf("Pasta %s criada.\n", dir_name);
-	
+
 {}
 	else{
 		//printf("Pasta %s já existe.\n", dir_name);
@@ -230,7 +230,7 @@ void send_file2(int s, char* user, struct sockaddr * peer, int peerlen){
 }
 
 void create_path(char *user){
-
+printf("%s\n", user);
 	struct stat st = {0};
 	char dir[50] = "database/sync_dir_";
 	strcat(dir, user);

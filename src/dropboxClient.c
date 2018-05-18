@@ -63,22 +63,22 @@ int get_sync_dir(){
 		if(sendToResponse < 0) {
 			printf("Falha ao enviar\n");
 		} else {
-			printf("Enviado! ");		
-			printf("Numero de bytes: %d \n", sendToResponse);	
+			printf("Enviado! ");
+			printf("Numero de bytes: %d \n", sendToResponse);
 		}
 		// recebe um ACK
 
 		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		
+
 		printf("RC: %d\n", rc);
 		if(rc > 0) {
-			printf("Recebido ACK na função get_sync_dir%s\n\n",&buffer_receiver);
+			printf("Recebido ACK na função get_sync_dir%s\n\n", buffer_receiver);
 			return SUCCESS;
 		} else {
 			printf("Timeout no request!\n");
 		}
 	}
-	
+
 }
 
 
@@ -101,7 +101,7 @@ int create_sync_dir() {
 int login_server(char *host, int port) {
 
 	// Timeout de 1 segundo
-	struct timeval tv;	
+	struct timeval tv;
 	tv.tv_sec = 1;
 	tv.tv_usec = 100000;
 
@@ -120,7 +120,7 @@ int login_server(char *host, int port) {
 
 	printf("Criado socket #%d\n", socket_id);
 
-	
+
 	//Setando TimeOut
 	if (setsockopt(socket_id, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
 		perror("Error");
@@ -178,7 +178,7 @@ void client_interface(struct package *pacote){
 
 			bzero(dir_name,100);
 
-			memset(dir_name2,0,sizeof(dir_name2));
+			memset(&dir_name2,0,sizeof(dir_name2));
 
 			printf("pos bzero: %s\n", dir_name);
 			printf("dirname2: %s\n", dir_name2);
@@ -284,7 +284,7 @@ int main(int argc, char *argv[] ){
 		printf("Enviado Pacote\n");
 		// recebe um ACK
 		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		printf("Recebido %s\n\n",&buffer_receiver);
+		printf("Recebido %s\n\n",buffer_receiver);
 
 		sleep(10);
 
