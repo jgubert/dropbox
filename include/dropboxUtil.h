@@ -13,6 +13,7 @@
 #define SUCCESS 1
 #define TRUE 1
 #define FALSE 0
+
 #define BUFFER_SIZE 1250
 #define MAXUSERS 10
 #define MAXDEVICES 2
@@ -20,7 +21,6 @@
 #define MAXNAME 8
 #define MAXFILES 10
 #define USER_NAME_MAX_LENGTH 32
-#define MAX_DEVICES_PER_USER 2
 
 // client instructions
 #define UPLOAD 0
@@ -73,7 +73,7 @@ struct file_info{
 };
 
 struct client{
-  int devices[MAX_DEVICES_PER_USER];
+  int devices[MAXDEVICES];
   char userid[MAXNAMES];
   struct file_info info[MAXFILES];
   int logged_in;
