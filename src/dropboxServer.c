@@ -29,7 +29,7 @@ void* servidor(void* args) {
 	//printf("DEBUG instrucao recebido em hex: %x\n", arguments->my_datagram.instruction);
 
 	instruction_id = desassembly_client_inst(arguments->my_datagram.instruction);
-	printf("Instructoin id: %d\n", instruction_id);
+	printf("Instruction id: %d\n", instruction_id);
 
 	if (instruction_id == ESTABLISH_CONNECTION) {
 
@@ -50,6 +50,7 @@ void* servidor(void* args) {
 			else{
 				strcpy(clients[i].userid, arguments->my_datagram.username);
 				clients[i].devices[0] = TRUE;
+				save_clients();
 				assembly_server_inst(&arguments->my_datagram.instruction, FIRST_TIME_USER);
 			}
 		}
@@ -62,6 +63,7 @@ void* servidor(void* args) {
 			if ( device_index != ERROR) {
 				if (device_index == 0)
 					clients[client_index].logged_in = TRUE;
+					save_clients();
 				assembly_server_inst(&arguments->my_datagram.instruction, CONNECTED);
 			}
 			else {
@@ -83,13 +85,14 @@ void* servidor(void* args) {
 			clients[client_index].logged_in = FALSE;
 		}
 
+		save_clients();
+
 		assembly_server_inst(&arguments->my_datagram.instruction, TERMINATE_CLIENT_EXECUTION);
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
 
 	// ELSE, OUTRAS INSTRUCOES
-
 
 }
 
@@ -144,6 +147,7 @@ int main(int argc, char *argv[]) {
 			printf("Erro na criação da thread\n");
 		}
 
+
     }
 }
 
@@ -180,11 +184,17 @@ int setup_server(int port) {
 int init_server() {
 
 	// carrega a lista de clientes
-	for(int i=0; i<MAXUSERS; i++){
-		clients[i].devices[0] = 0;
-		clients[i].devices[1] = 0;
-		strcpy(clients[i].userid, "");
-		clients[i].logged_in = 0;
+	if(access("clients.dat", F_OK ) != -1)
+		load_clients();
+	else{
+		for(int i=0; i<MAXUSERS; i++){
+			clients[i].devices[0] = 0;
+			clients[i].devices[1] = 0;
+			strcpy(clients[i].userid, "");
+			clients[i].logged_in = 0;
+			save_clients();
+	}
+
 	}
 
 	// carrega informacoes dos clientes que foram salvos
@@ -521,4 +531,42 @@ int log_off_device(char username[]){
 		}
 	}
 	return ERROR;
+}
+
+int save_clients() {
+    FILE * out_clients;
+    out_clients = fopen ("clients.dat", "w");
+    if (out_clients == NULL) {
+        return ERROR;
+    }
+
+    int i;
+    for(i=0;i<MAXUSERS;i++) {
+        fwrite (&clients[i], sizeof(struct client), 1, out_clients);
+    }
+
+    fclose(out_clients);
+
+    if(fwrite == 0)
+        return ERROR;
+
+    return SUCCESS;
+}
+
+int load_clients() {
+    FILE * in_clients;
+
+    in_clients = fopen ("clients.dat", "r");
+    if (in_clients == NULL){
+        return ERROR;
+    }
+
+    int i;
+    for(i=0;i<MAXUSERS;i++) {
+        fread(&clients[i], sizeof(struct client), 1, in_clients);
+    }
+
+    fclose(in_clients);
+
+    return SUCCESS;
 }
