@@ -15,21 +15,21 @@
 #define GET_SYNC_DIR 4
 
 //void receive_file(int s, create_database_structuret sockaddr* peer, int peerlen);
-void send_file2(int s, char* user, struct sockaddr* peer, int peerlen);
-struct package create_package(int s, struct sockaddr * peer, int peerlen);
-int create_database_structure();
-int desassembly_client_inst(int instruction);
-int assembly_server_inst(int *instruction, int instruction_id);
-int setup_server(int port);
-void* servidor(void* args);
-int is_first_connection(char username[]);
-int has_too_many_devices(char username[]);
-int init_server();
-struct client get_client(char username[]);
-int get_client_index(char username[]);
-int is_first_connection(char username[]);
-int log_device(char username[]);
-int log_off_device(char username[]);
+//void send_file2(int s, char* user, struct sockaddr* peer, int peerlen);
+//struct package create_package(int s, struct sockaddr * peer, int peerlen);
+//int create_database_structure();
+//int desassembly_client_inst(int instruction);
+//int assembly_server_inst(int *instruction, int instruction_id);
+//int setup_server(int port);
+//void* servidor(void* args);
+//int is_first_connection(char username[]);
+//int has_too_many_devices(char username[]);
+//int init_server();
+//struct client get_client(char username[]);
+//int get_client_index(char username[]);
+//int is_first_connection(char username[]);
+//int log_device(char username[]);
+//int log_off_device(char username[]);
 // variaveis globais de controle do servidor
 struct client clients[10];
 int semaforo = 0;
@@ -51,7 +51,7 @@ void* servidor(void* args) {
 
 		// verifica se usuario existe no sistema
 		if ( is_first_connection(arguments->my_datagram.username) ){
-			
+
 			// get available client slot
 			int i = 0;
 			for(i=0; i<MAXUSERS; i++) {
@@ -88,7 +88,7 @@ void* servidor(void* args) {
 
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
-		
+
 		// sair da thread
 	}
 
@@ -428,7 +428,7 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		*(instruction) = *(instruction) | 0x00000c00; // add instrucao
 		return SUCCESS;
 	}
-	
+
 	/*if (instruction_id == UPLOAD) {
 		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
 		// botar aqui a máscara específica
@@ -489,7 +489,7 @@ struct client get_client(char username[]) {
 }
 
 int get_client_index(char username[]) {
-	
+
 	for(int i=0; i<MAXUSERS; i++){
 		if( strcmp(clients[i].userid, username) == 0 )
 			return i;

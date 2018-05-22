@@ -20,6 +20,7 @@
 #define MAXNAME 8
 #define MAXFILES 10
 #define USER_NAME_MAX_LENGTH 32
+#define MAX_DEVICES_PER_USER 2
 
 // client instructions
 #define UPLOAD 0
@@ -43,7 +44,7 @@
 struct datagram {
   int instruction;
   char username[USER_NAME_MAX_LENGTH];
-  char buffer[1250];
+  char buffer[BUFFER_SIZE];
 };
 
 struct arg_struct {
@@ -55,11 +56,11 @@ struct arg_struct {
 struct instruction {
 	int command_id;
 	char path[70];
-	char filename[20];
+	char filename[USER_NAME_MAX_LENGTH];
 };
 
 struct package {
-	char username[20];
+	char username[USER_NAME_MAX_LENGTH];
 	struct instruction command;
 	char buffer[BUFFER_SIZE];
 };
@@ -72,7 +73,7 @@ struct file_info{
 };
 
 struct client{
-  int devices[2];
+  int devices[MAX_DEVICES_PER_USER];
   char userid[MAXNAMES];
   struct file_info info[MAXFILES];
   int logged_in;

@@ -25,12 +25,12 @@ int peerlen, rc;
 char buffer[BUFFER_SIZE];
 char buffer_receiver[BUFFER_SIZE];
 
-int get_sync_dir();
-int assembly_client_inst(int *instruction, int instruction_id);
-int login_server(char *host, int port);
-int handle_server_instruction(int instruction_id);
-int desassembly_server_inst(int word);
-void interface();
+//int get_sync_dir();
+//int assembly_client_inst(int *instruction, int instruction_id);
+//int login_server(char *host, int port);
+//int handle_server_instruction(int instruction_id);
+//int desassembly_server_inst(int word);
+//void interface();
 
 struct datagram my_datagram; // datagrama que será enviado
 
@@ -63,7 +63,7 @@ void interface(){
 			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 			// recebe datagrama com ACK
 			rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-	
+
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
 	}
@@ -164,7 +164,7 @@ int main(int argc, char *argv[] ){
 int login_server(char *host, int port) {
 
 	// Timeout de 1 segundo
-	struct timeval tv;	
+	struct timeval tv;
 	tv.tv_sec = 0;
 	tv.tv_usec = 100000;
 
@@ -196,11 +196,11 @@ int login_server(char *host, int port) {
 		rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 		// recebe datagrama com ACK
 		rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-	
+
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe oACK do servidor
 
 
-	
+
 
 	return SUCCESS;
 }
@@ -357,32 +357,32 @@ int assembly_client_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 	if (instruction_id == UPLOAD) {
-		*(instruction) = *(instruction) & 0x10000000; 	// 
+		*(instruction) = *(instruction) & 0x10000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == DOWNLOAD) {
-		*(instruction) = *(instruction) & 0x18000000; 	// 
+		*(instruction) = *(instruction) & 0x18000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == LIST_SERVER) {
-		*(instruction) = *(instruction) & 0x20000000; 	// 
+		*(instruction) = *(instruction) & 0x20000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == LIST_CLIENT) {
-		*(instruction) = *(instruction) & 0x28000000; 	// 
+		*(instruction) = *(instruction) & 0x28000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == GET_SYNC_DIR) {
-		*(instruction) = *(instruction) & 0x30000000; 	// 
+		*(instruction) = *(instruction) & 0x30000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == EXIT) {
-		*(instruction) = *(instruction) & 0x38000000; 	// 
+		*(instruction) = *(instruction) & 0x38000000; 	//
 		return SUCCESS;
 	}
 
