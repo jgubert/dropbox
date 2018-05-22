@@ -51,12 +51,14 @@ void* servidor(void* args) {
 				strcpy(clients[i].userid, arguments->my_datagram.username);
 				clients[i].devices[0] = TRUE;
 				save_clients();
+
+				// CRIAR DIRETORIO USERNAME AQUI
+
 				assembly_server_inst(&arguments->my_datagram.instruction, FIRST_TIME_USER);
 			}
 		}
 
 		else {
-
 			int device_index = log_device(arguments->my_datagram.username);
 			int client_index = get_client_index(arguments->my_datagram.username);
 
@@ -90,7 +92,19 @@ void* servidor(void* args) {
 		assembly_server_inst(&arguments->my_datagram.instruction, TERMINATE_CLIENT_EXECUTION);
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+
 	}
+
+	if (instruction_id == UPLOAD) {
+
+		// receber os dados e salvar no arquivo
+
+		assembly_server_inst(&arguments->my_datagram.instruction, FILE_RECEIVED);
+		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+	}
+
+
 
 	// ELSE, OUTRAS INSTRUCOES
 
@@ -193,12 +207,10 @@ int init_server() {
 			strcpy(clients[i].userid, "");
 			clients[i].logged_in = 0;
 			save_clients();
-	}
+		}
 
 	}
-
 	// carrega informacoes dos clientes que foram salvos
-
 }
 
     /*create_database_structure();
@@ -429,6 +441,12 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 	if (instruction_id == TERMINATE_CLIENT_EXECUTION) {
 		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
 		*(instruction) = *(instruction) | 0x00000d00; // add instrucao
+		return SUCCESS;
+	}
+
+	if (instruction_id == FILE_RECEIVED) {
+		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
+		*(instruction) = *(instruction) | 0x00000e00; // add instrucao
 		return SUCCESS;
 	}
 
