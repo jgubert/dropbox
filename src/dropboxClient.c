@@ -32,6 +32,7 @@ struct datagram my_datagram; // datagrama que será enviado
 void interface(){
 
 	char line[100];
+	char *command;
 
 	while(1) {
 		scanf("%[^\n]", line);
@@ -47,14 +48,17 @@ void interface(){
 		strcpy(command, line);
 
 		printf("command: %s\n", command);
+		printf("strcmp exit = %d\n", strcmp(command, "exit") );
+		printf("strcmp upload = %d\n", strcmp(command, "upload") );
+
 
 		if(strcmp(command, "upload") == 0){
-			printf("entrou no upload");
+			printf("entrou no upload\n");
 
 		}
 
 		else if(strcmp(command, "download") == 0){
-
+			printf("entrou no download\n");
 		}
 
 		else if(strcmp(command, "list_server") == 0){
@@ -69,8 +73,8 @@ void interface(){
 
 		}
 
-		else if(strcmp(command, exit) == 0){
-			printf("entrou no exit da interface");
+		else if(strcmp(command, "exit") == 0){
+			printf("entrou no exit da interface\n");
 			assembly_client_inst(&my_datagram.instruction, EXIT);
 		}
 
@@ -81,7 +85,7 @@ void interface(){
 			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 			// recebe datagrama com ACK
 			rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-	
+
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
 	}
