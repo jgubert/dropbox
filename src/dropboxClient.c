@@ -40,29 +40,52 @@ void interface(){
 		/*
 		TRATAR A LINHA DE ENTRADA
 		*/
-		char command[100];
+		//printf("%d", strlen(line));
+		printf("line: %s\n", line);
+		//strcat(line, '\0');
+
 		strcpy(command, line);
 
-		if(strcmp(line, "exit") == 0){
+		printf("command: %s\n", command);
+
+		if(strcmp(command, "upload") == 0){
+			printf("entrou no upload");
+
+		}
+
+		else if(strcmp(command, "download") == 0){
+
+		}
+
+		else if(strcmp(command, "list_server") == 0){
+
+		}
+
+		else if(strcmp(command, "list_client") == 0){
+
+		}
+
+		else if(strcmp(command, "get_sync_dir") == 0){
+
+		}
+
+		else if(strcmp(command, exit) == 0){
+			printf("entrou no exit da interface");
 			assembly_client_inst(&my_datagram.instruction, EXIT);
 		}
 
 
-		else if(strcmp(command, "outro_comando") == 0){
-
-		}
-
 		do {
 			// envia datagrama
+
 			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 			// recebe datagrama com ACK
 			rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-
-	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
+	
+		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
 	}
 }
-
 
 int main(int argc, char *argv[] ){
 
@@ -406,11 +429,13 @@ int handle_server_instruction(int instruction_id){
 
 	if( instruction_id == FIRST_TIME_USER) {
 		printf("first time user\n");
+		interface();
 		return SUCCESS;
 	}
 
 	if( instruction_id == CONNECTED) {
 		printf("connected\n");
+		interface();
 		return SUCCESS;
 	}
 
