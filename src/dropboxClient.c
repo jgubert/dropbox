@@ -1,4 +1,3 @@
-//#include "../include/dropboxClient.h"
 #include "../include/dropboxUtil.h"
 
 #include <stdio.h>
@@ -25,12 +24,6 @@ int peerlen, rc;
 char buffer[BUFFER_SIZE];
 char buffer_receiver[BUFFER_SIZE];
 
-//int get_sync_dir();
-//int assembly_client_inst(int *instruction, int instruction_id);
-//int login_server(char *host, int port);
-//int handle_server_instruction(int instruction_id);
-//int desassembly_server_inst(int word);
-//void interface();
 
 struct datagram my_datagram; // datagrama que será enviado
 
