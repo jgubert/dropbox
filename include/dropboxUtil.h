@@ -44,6 +44,7 @@
 
 struct datagram {
   int instruction;
+  int id;
   char username[USER_NAME_MAX_LENGTH];
   char buffer[BUFFER_SIZE];
 };

@@ -469,3 +469,22 @@ int handle_server_connectivity_status(int instruction_id){
 	printf("Server instruction nao existe");
 
 }
+
+int send_file(char *filename) {
+	FILE * file;
+	file = fopen(filename,"r");
+    if (file == NULL){
+        return ERROR;
+    }
+
+    struct datagram pkg = {"rafael",""};
+
+    while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
+        //Envia o 'pkg.buffer'
+        //Bloqueia até receber o ack
+        //Quando receber o ack, continua no 'while'
+    }
+
+    fclose(file);
+    return SUCCESS;
+}
