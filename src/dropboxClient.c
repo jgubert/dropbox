@@ -476,8 +476,8 @@ int send_file(char *filename) {
     if (file == NULL){
         return ERROR;
     }
-
-    struct datagram pkg = {"rafael",""};
+		//datagram = instruction, id, user, buffer
+    struct datagram pkg = {0,1,"rafael"};
 
     while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
         //Envia o 'pkg.buffer'
