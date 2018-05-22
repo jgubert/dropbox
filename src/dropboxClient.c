@@ -1,4 +1,5 @@
 #include "../include/dropboxUtil.h"
+#include "../include/dropboxClient.h"
 
 #include <stdio.h>
 #include <string.h>

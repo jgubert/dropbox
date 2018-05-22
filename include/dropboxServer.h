@@ -2,6 +2,7 @@
 #define MAXNAME 8
 #define MAXFILES 10
 
+#include <sys/socket.h>
 
 int socket_create(char *host, int port);
 void sync_server();
@@ -10,7 +11,7 @@ void sync_server();
 void create_path(char *user);
 int client_count(char *user);
 void receive_file(int s, struct sockaddr* peer, int peerlen);
-void print_package(struct package pacote);
+//void print_package(struct package pacote);
 int create_database_structure();
 //void receive_file(int s, create_database_structuret sockaddr* peer, int peerlen);
 void send_file2(int s, char* user, struct sockaddr* peer, int peerlen);
