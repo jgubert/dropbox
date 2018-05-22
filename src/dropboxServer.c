@@ -29,7 +29,7 @@ void* servidor(void* args) {
 	//printf("DEBUG instrucao recebido em hex: %x\n", arguments->my_datagram.instruction);
 
 	instruction_id = desassembly_client_inst(arguments->my_datagram.instruction);
-	//printf("Instructoin id: %d\n", instruction_id);
+	printf("Instructoin id: %d\n", instruction_id);
 
 	if (instruction_id == ESTABLISH_CONNECTION) {
 

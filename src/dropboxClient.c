@@ -54,6 +54,7 @@ void interface(){
 
 		if(strcmp(command, "upload") == 0){
 			printf("entrou no upload\n");
+			assembly_client_inst(&my_datagram.instruction, UPLOAD);
 
 		}
 
@@ -186,7 +187,7 @@ int login_server(char *host, int port) {
 
 	// Timeout de 1 segundo
 	struct timeval tv;
-	tv.tv_sec = 0;
+	tv.tv_sec = 1;
 	tv.tv_usec = 100000;
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
@@ -373,22 +374,24 @@ int assembly_client_inst(int *instruction, int instruction_id) {
 
 	*(instruction) = *(instruction) & 0x07ffffff;		// zera a parte que carrega as instrucoes
 
+	printf("instruction_id: %d\n", instruction_id);
+
 	if (instruction_id == ESTABLISH_CONNECTION) {
 		*(instruction) = *(instruction) | 0x08000000; 	// coloca o 1 no início
 		return SUCCESS;
 	}
 	if (instruction_id == UPLOAD) {
-		*(instruction) = *(instruction) & 0x10000000; 	//
+		*(instruction) = *(instruction) | 0x10000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == DOWNLOAD) {
-		*(instruction) = *(instruction) & 0x18000000; 	//
+		*(instruction) = *(instruction) | 0x18000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == LIST_SERVER) {
-		*(instruction) = *(instruction) & 0x20000000; 	//
+		*(instruction) = *(instruction) | 0x20000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
@@ -398,12 +401,12 @@ int assembly_client_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 	if (instruction_id == GET_SYNC_DIR) {
-		*(instruction) = *(instruction) & 0x30000000; 	//
+		*(instruction) = *(instruction) | 0x30000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
 	if (instruction_id == EXIT) {
-		*(instruction) = *(instruction) & 0x38000000; 	//
+		*(instruction) = *(instruction) | 0x38000000; 	//
 		return SUCCESS;
 	}
 
