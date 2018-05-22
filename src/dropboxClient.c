@@ -29,7 +29,7 @@ char buffer_receiver[BUFFER_SIZE];
 struct datagram my_datagram; // datagrama que será enviado
 
 
-void interface(){
+int interface(){
 
 	char line[100];
 	char *command;
@@ -89,7 +89,15 @@ void interface(){
 
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
+		// tratar o que voltar do servidor
+
+		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
+			printf("CLIENTE TERMINANDO\n");
+			break;
+		}
+
 	}
+	return 0;
 }
 
 int main(int argc, char *argv[] ){
@@ -138,7 +146,7 @@ int main(int argc, char *argv[] ){
 	int instruction_id = desassembly_server_inst(instruction);
 	printf("%d\n", instruction_id);
 
-	handle_server_instruction(instruction_id);
+	handle_server_connectivity_status(instruction_id);
 
 	printf("\nDEBUG terminando a main...\n");
 
@@ -220,9 +228,6 @@ int login_server(char *host, int port) {
 		rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
 
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe oACK do servidor
-
-
-
 
 	return SUCCESS;
 }
@@ -428,11 +433,14 @@ int desassembly_server_inst(int word) {
 	if ( (word & 0x0000ff00) == 0x00000c00 ) {
 		return TOO_MANY_USERS;
 	}
+	if ( (word & 0x0000ff00) == 0x00000d00 ) {
+		return TERMINATE_CLIENT_EXECUTION;
+	}
 
 	return ERROR;
 }
 
-int handle_server_instruction(int instruction_id){
+int handle_server_connectivity_status(int instruction_id){
 
 	if( instruction_id == FIRST_TIME_USER) {
 		printf("first time user\n");
@@ -442,8 +450,10 @@ int handle_server_instruction(int instruction_id){
 
 	if( instruction_id == CONNECTED) {
 		printf("connected\n");
-		interface();
-		return SUCCESS;
+		if (interface() == SUCCESS)
+			return SUCCESS;
+		else
+			printf("erro ao terminar\n");
 	}
 
 	if( instruction_id == TOO_MANY_DEVICES) {

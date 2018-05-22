@@ -38,6 +38,7 @@
 #define CONNECTED 24
 #define TOO_MANY_DEVICES 25
 #define TOO_MANY_USERS 26
+#define TERMINATE_CLIENT_EXECUTION 27
 
 #define SOCKET int
 

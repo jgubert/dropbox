@@ -50,7 +50,6 @@ void* servidor(void* args) {
 			else{
 				strcpy(clients[i].userid, arguments->my_datagram.username);
 				clients[i].devices[0] = TRUE;
-				clients[i].devices[0] = TRUE;
 				assembly_server_inst(&arguments->my_datagram.instruction, FIRST_TIME_USER);
 			}
 		}
@@ -83,6 +82,10 @@ void* servidor(void* args) {
 		if (log_off_device(arguments->my_datagram.username) == 0){ // se deslogar do device cujo index é 0
 			clients[client_index].logged_in = FALSE;
 		}
+
+		assembly_server_inst(&arguments->my_datagram.instruction, TERMINATE_CLIENT_EXECUTION);
+		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
 
 	// ELSE, OUTRAS INSTRUCOES
@@ -412,6 +415,13 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		*(instruction) = *(instruction) | 0x00000c00; // add instrucao
 		return SUCCESS;
 	}
+
+	if (instruction_id == TERMINATE_CLIENT_EXECUTION) {
+		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
+		*(instruction) = *(instruction) | 0x00000d00; // add instrucao
+		return SUCCESS;
+	}
+
 
 	/*if (instruction_id == UPLOAD) {
 		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
