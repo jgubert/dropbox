@@ -15,3 +15,4 @@ int login_server(char *host, int port);
 int handle_server_connectivity_status(int instruction_id);
 int desassembly_server_inst(int word);
 int interface();
+int create_sync_dir();

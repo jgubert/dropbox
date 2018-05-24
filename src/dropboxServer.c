@@ -19,6 +19,12 @@ struct client clients[10];
 int semaforo = 0;
 char buffer[BUFFER_SIZE];
 
+// --- FUNÇÕES AUXILIARES ---
+
+int create_database_structure();
+void create_path(char *user);
+
+
 
 void* servidor(void* args) {
 
@@ -53,6 +59,8 @@ void* servidor(void* args) {
 				save_clients();
 
 				// CRIAR DIRETORIO USERNAME AQUI
+				create_database_structure();
+				create_path(clients[i].userid);
 
 				assembly_server_inst(&arguments->my_datagram.instruction, FIRST_TIME_USER);
 			}
@@ -96,10 +104,17 @@ void* servidor(void* args) {
 	}
 
 	if (instruction_id == UPLOAD) {
+		printf("Servidor entrou no if do UPLOAD!\n");
+
+		// FILE_RECEIVED é temporario.. primeiro envia o ACK para começar o envio do arquivo.
+		assembly_server_inst(&arguments->my_datagram.instruction, TOO_MANY_DEVICES);
+		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+
+		receive_file("teste.txt",arguments->s,(struct sockaddr*)&arguments->clientAddr, clientLen,arguments->my_datagram.username);
 
 		// receber os dados e salvar no arquivo
 
-		assembly_server_inst(&arguments->my_datagram.instruction, FILE_RECEIVED);
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
@@ -136,13 +151,15 @@ int main(int argc, char *argv[]) {
     int rc;
     struct arg_struct *args = NULL;
 
+	//Tirei essas declarações de dentro do while
+	SOCKET clientSocket;
+   	struct  sockaddr_in clientAddr;
+    unsigned int clientLen;
+    clientLen = sizeof(clientAddr);
+
     while(1) {
 
-    	SOCKET clientSocket;
-    	struct  sockaddr_in clientAddr;
-    	unsigned int clientLen;
-    	clientLen = sizeof(clientAddr);
-
+    	
     	pthread_t thread;
 		rc = recvfrom(s, &received_datagram, sizeof(struct datagram), 0, (struct sockaddr *) &clientAddr,(socklen_t *)&clientLen);
 
@@ -150,6 +167,7 @@ int main(int argc, char *argv[]) {
 			printf("Erro ao receber datagrama\n");
 			return ERROR;
 		}
+		else printf("Servidor recebeu um datagram\n");
 
 		args = (struct arg_struct*)malloc(sizeof *args);
 		args->my_datagram = received_datagram;
@@ -262,7 +280,7 @@ int init_server() {
 
 
 
-/*int create_database_structure() {
+int create_database_structure() {
 
 	char dir_name[20] = "database";
 
@@ -276,7 +294,7 @@ int init_server() {
 	}
 	return SUCCESS;
 
-}*/
+}
 
 /*
 void receive_file(int s, struct sockaddr* peer, int peerlen){
@@ -347,6 +365,15 @@ void send_file2(int s, char* user, struct sockaddr * peer, int peerlen){
     fclose(file_complete);
 }
 
+
+
+*/
+
+
+/*********************************************
+*	FUNÇÕES AUXILIARES DO SERVIDOR
+**********************************************/
+
 void create_path(char *user){
 printf("%s\n", user);
 	struct stat st = {0};
@@ -359,13 +386,6 @@ printf("%s\n", user);
 
 	return;
 }
-
-*/
-
-
-/*********************************************
-*	FUNÇÕES AUXILIARES DO SERVIDOR
-**********************************************/
 
 int desassembly_client_inst(int word) {
 	int instruction = word & 0xffff0000;
@@ -587,4 +607,48 @@ int load_clients() {
     fclose(in_clients);
 
     return SUCCESS;
+}
+
+void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *userid){
+	int rc;
+	struct file_info fileinfo;
+	char buffer_ack[15];
+	bzero(buffer_ack,15);
+	struct datagram pkg;
+
+	char dir[100] = "database/sync_dir_";
+	strcat(dir, userid);
+	strcat(dir,"/");
+
+	printf("DEBUG: Entrou na receive_files\n");
+
+	rc = recvfrom(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+	strcpy(buffer_ack, "ACK_FILEINFO");
+	fprintf(stderr,"buffer_ack: %s\n",buffer_ack);
+	rc = sendto(s, buffer_ack, 15, 0, (struct sockaddr*) peer, peerlen);
+
+	fprintf(stderr,"DEBUG: ACK enviado receive_files\n");
+
+	strcat(dir,fileinfo.name);
+	strcat(dir,".");
+	strcat(dir,fileinfo.extension);
+
+	fprintf(stderr,"DEBUG: %s\n", dir);
+
+	FILE * write_file;
+    write_file = fopen (dir, "w");
+    if (write_file == NULL) {
+        printf("ERRO AO ABRIR O ARQUIVO PARA ESCRITA!\n");
+    }
+
+	rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+	pkg.id = 2;
+	rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
+
+	fwrite(pkg.buffer, BUFFER_SIZE, 1, write_file);
+	fclose(write_file);
+
+
+
 }

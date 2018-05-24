@@ -48,8 +48,6 @@ int interface(){
 		strcpy(command, line);
 
 		printf("command: %s\n", command);
-		printf("strcmp exit = %d\n", strcmp(command, "exit") );
-		printf("strcmp upload = %d\n", strcmp(command, "upload") );
 
 
 		if(strcmp(command, "upload") == 0){
@@ -82,7 +80,6 @@ int interface(){
 
 		do {
 			// envia datagrama
-
 			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 			// recebe datagrama com ACK
 			rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
@@ -93,6 +90,12 @@ int interface(){
 
 		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
 			printf("CLIENTE TERMINANDO\n");
+			break;
+		}
+		//USEU A TOO_MANY_DEVICES PQ NAO SEI COLOCAR INSTRUCOES NA DESASSEMBLY_SERVER
+		else if (desassembly_server_inst(my_datagram.instruction) == TOO_MANY_DEVICES){
+			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
+			send_file("teste.txt");
 			break;
 		}
 
@@ -196,7 +199,7 @@ int login_server(char *host, int port) {
 	// Timeout de 1 segundo
 	struct timeval tv;
 	tv.tv_sec = 1;
-	tv.tv_usec = 100000;
+	tv.tv_usec = 200000;
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
@@ -213,9 +216,11 @@ int login_server(char *host, int port) {
 	printf("Criado socket #%d\n", socket_id);
 
 	//Setando TimeOut
+	
 	if (setsockopt(socket_id, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
 		perror("Error");
 	}
+	
 
 	// prepara instrução
 	assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
@@ -225,9 +230,11 @@ int login_server(char *host, int port) {
 		// envia datagrama
 		rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 		// recebe datagrama com ACK
-		rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+		rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0, (struct sockaddr *) &peer, (socklen_t *) &peerlen);
 
-	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe oACK do servidor
+	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe o ACK do servidor
+
+	create_sync_dir();
 
 	return SUCCESS;
 }
@@ -275,7 +282,7 @@ int login_server(char *host, int port) {
 
 
 //FUNÇÃO PARA CRIAR A PASTA DO USUARIO
-/*int create_sync_dir() {
+int create_sync_dir() {
 	//TODO implementar
 	char dir_name[50] = "sync_dir_";
 
@@ -288,7 +295,7 @@ int login_server(char *host, int port) {
 		return ERROR;
 	}
 	return SUCCESS;
-}*/
+}
 
 
 
@@ -472,18 +479,60 @@ int handle_server_connectivity_status(int instruction_id){
 
 int send_file(char *filename) {
 	FILE * file;
-	file = fopen(filename,"r");
+	char dir[100] = "sync_dir_";
+	strcat(dir,user_name);
+	strcat(dir,"/");
+	strcat(dir,filename);
+
+	fprintf(stderr,"DEBUG: Entrou na funcao send_file.\n");
+	fprintf(stderr,"filename: %s\n", dir);
+
+	file = fopen(dir,"r");
     if (file == NULL){
         return ERROR;
     }
-		//datagram = instruction, id, user, buffer
-    struct datagram pkg = {0,1,"rafael"};
+	
+	fprintf(stderr,"DEBUG: Abriu arquivo na funcao send_file.\n");
+
+	struct file_info fileinfo = {"teste","txt","ok",20};
+
+	int rc;
+	char buffer_ack[256];
+	bzero(buffer_ack,256);
+
+	do {
+		// envia o file_info
+		rc = sendto(socket_id, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr *)&peer, peerlen);
+		// recebe datagrama com ACK
+		rc = recvfrom(socket_id, buffer_ack, 256,0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+	
+		printf("%s\n", buffer_ack);
+
+	} while (rc < 0 || strcmp(buffer_ack,"ACK_FILEINFO") ); // recebe algo e recebe o ACK do servidor
+
+
+	fprintf(stderr,"DEBUG: ACK recebido funcao send_file.\n");
+	
+
+	//datagram = instruction, id, user, buffer
+    struct datagram pkg = {0,1,"joao"};
 
     while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
         //Envia o 'pkg.buffer'
         //Bloqueia até receber o ack
         //Quando receber o ack, continua no 'while'
     }
+
+	fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
+
+	do {
+		// envia o file_info
+		rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+		// recebe datagrama com ACK
+		rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+
+
+	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
 
     fclose(file);
     return SUCCESS;
