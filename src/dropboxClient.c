@@ -1,5 +1,5 @@
-//#include "../include/dropboxClient.h"
 #include "../include/dropboxUtil.h"
+#include "../include/dropboxClient.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -12,38 +12,230 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
-#define SOCKET	int
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
 #define USER_NAME_SIZE 25
-#define BUFFER_SIZE 12500
-
-#define ERROR -1
-#define SUCCESS 1
-
-//estruturas que o usuario vai escolher
-#define UPLOAD 0
-#define DOWNLOAD 1
-#define LIST_SERVER 2
-#define LIST_CLIENT 3
-#define GET_SYNC_DIR 4
-#define EXIT 5
 
 
-char user_name[USER_NAME_SIZE];
+char user_name[USER_NAME_MAX_LENGTH];
 int user_socket_id;
-// teste
 struct sockaddr_in peer;
 SOCKET socket_id;
 int peerlen, rc;
 char buffer[BUFFER_SIZE];
 char buffer_receiver[BUFFER_SIZE];
 
-int get_sync_dir();
+
+struct datagram my_datagram; // datagrama que será enviado
+
+
+int interface(){
+
+	char line[100];
+	char *command;
+
+	while(1) {
+		scanf("%[^\n]", line);
+		getchar();
+
+		/*
+		TRATAR A LINHA DE ENTRADA
+		*/
+		//printf("%d", strlen(line));
+		printf("line: %s\n", line);
+		//strcat(line, '\0');
+
+		strcpy(command, line);
+
+		printf("command: %s\n", command);
+		printf("strcmp exit = %d\n", strcmp(command, "exit") );
+		printf("strcmp upload = %d\n", strcmp(command, "upload") );
+
+
+		if(strcmp(command, "upload") == 0){
+			printf("entrou no upload\n");
+			assembly_client_inst(&my_datagram.instruction, UPLOAD);
+
+		}
+
+		else if(strcmp(command, "download") == 0){
+			printf("entrou no download\n");
+		}
+
+		else if(strcmp(command, "list_server") == 0){
+
+		}
+
+		else if(strcmp(command, "list_client") == 0){
+
+		}
+
+		else if(strcmp(command, "get_sync_dir") == 0){
+
+		}
+
+		else if(strcmp(command, "exit") == 0){
+			printf("entrou no exit da interface\n");
+			assembly_client_inst(&my_datagram.instruction, EXIT);
+		}
+
+
+		do {
+			// envia datagrama
+
+			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+			// recebe datagrama com ACK
+			rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+
+		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
+
+		// tratar o que voltar do servidor
+
+		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
+			printf("CLIENTE TERMINANDO\n");
+			break;
+		}
+
+	}
+	return 0;
+}
+
+int main(int argc, char *argv[] ){
+
+    int port;
+    char * host;
+
+    struct package pacote; // pacote que será enviado
+    //struct datagram datagrama; // datagrama que será enviado
+
+    if(argc < 4) {
+    	printf("Utilizar:\n");
+    	printf("dropBoxClient <user> <address> <port>\n");
+    	exit(1);
+    }
+
+    // Leitura de parametros
+	if(strlen(argv[1]) > USER_NAME_MAX_LENGTH) {
+		printf("Erro: tamanho de usuario precisa ser menor que %d\n", USER_NAME_SIZE);
+		exit(1);
+	} else {
+		strcpy(user_name, argv[1]);  // User
+	}
+
+	//strcpy(pacote.username, user_name);
+	strcpy(my_datagram.username, user_name);
+
+  	host = malloc(strlen(argv[2])); // Host
+	strcpy(host, argv[2]);
+
+  	port = atoi(argv[3]);   //Port
+
+    // Estabelece sessao entre cliente e servidor e recebe instrucao do servidor com status da conexao
+	if(login_server(host, port) == SUCCESS) {
+		//TODO: implementar
+	} else {
+		printf("[main] Erro ao estabelecer sessao em login_server\n");
+		exit(1);
+	}
+
+	// TRATAR O QUE VIER DO SERVIDOR AQUI!
+	int instruction = my_datagram.instruction;
+
+	printf("%x\n", instruction);
+
+	int instruction_id = desassembly_server_inst(instruction);
+	printf("%d\n", instruction_id);
+
+	handle_server_connectivity_status(instruction_id);
+
+	printf("\nDEBUG terminando a main...\n");
+
+
+	// entrar na interface AQUI
+		// receber os comandos, preparar a instrucao e mandar pro servidor
+
+
+	return 0; // teste, remover
+
+	// chamar o get sync_dir aqui
+
+	/*char line[100];
+
+	while(1) {
+
+		scanf("%[^\n]", line);
+		getchar();
+
+		populate_instruction(line, &pacote.command);
+		fflush(stdin);
+
+		//pacote.command = command;
+
+		//FAZENDO UM TESTE NO CASO DO upload
+		//ideia é abrir testar se arquivo que quer enviar existe,
+		//caso exista coloca ele no buffer
+
+		client_interface(&pacote);
+
+		//send_file();
+
+		// envia o pacote
+		sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
+		printf("Enviado Pacote\n");
+		// recebe um ACK
+		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+		printf("Recebido %s\n\n",buffer_receiver);
+
+		sleep(10);
+
+	}*/
+}
+
+int login_server(char *host, int port) {
+
+	// Timeout de 1 segundo
+	struct timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 100000;
+
+    // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
+	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
+		printf("Falha na criacao do socket\n");
+		return ERROR;
+ 	}
+
+    // Cria a estrutura com quem vai conversar
+	peer.sin_family = AF_INET;
+	peer.sin_port = htons(port);
+	peer.sin_addr.s_addr = inet_addr(host);
+	peerlen = sizeof(peer);
+
+	printf("Criado socket #%d\n", socket_id);
+
+	//Setando TimeOut
+	if (setsockopt(socket_id, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+		perror("Error");
+	}
+
+	// prepara instrução
+	assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
+
+	int rc;
+	do {
+		// envia datagrama
+		rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+		// recebe datagrama com ACK
+		rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+
+	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe oACK do servidor
+
+	return SUCCESS;
+}
 
 
 
-int get_sync_dir(){
+
+/*int get_sync_dir(){
 	//TODO implementar
 	//envia um pacote com as informações do cliente
 
@@ -79,11 +271,11 @@ int get_sync_dir(){
 		}
 	}
 
-}
+}*/
 
 
 //FUNÇÃO PARA CRIAR A PASTA DO USUARIO
-int create_sync_dir() {
+/*int create_sync_dir() {
 	//TODO implementar
 	char dir_name[50] = "sync_dir_";
 
@@ -96,52 +288,9 @@ int create_sync_dir() {
 		return ERROR;
 	}
 	return SUCCESS;
-}
-
-int login_server(char *host, int port) {
-
-	// Timeout de 1 segundo
-	struct timeval tv;	
-	tv.tv_sec = 0;
-	tv.tv_usec = 100000;
+}*/
 
 
-    // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
-	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-		printf("Falha na criacao do socket\n");
-		return ERROR;
- 	}
-
-    // Cria a estrutura com quem vai conversar
-	peer.sin_family = AF_INET;
-	peer.sin_port = htons(port);
-	peer.sin_addr.s_addr = inet_addr(host);
-	peerlen = sizeof(peer);
-
-	printf("Criado socket #%d\n", socket_id);
-
-
-	//Setando TimeOut
-	if (setsockopt(socket_id, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
-		perror("Error");
-	}
-
-	//Cria pasta do usuario
-	if(create_sync_dir() == SUCCESS){
-		printf("Diretorio criado com sucesso\n");
-	}
-
-	//Executa o comando get_sync_dir
-	if(get_sync_dir() == SUCCESS) {
-		printf("Diretorio sincronizado com sucesso\n");
-	} else {
-		printf("Error ao sincronizar diretorio\n");
-		return ERROR;
-	}
-
-	return SUCCESS;
-
-}
 
 /* colocar na interface
 
@@ -167,7 +316,7 @@ void package_make(char line){
 	fflush(stdin);
 }  */
 
-void client_interface(struct package *pacote){
+/*void client_interface(struct package *pacote){
 
 	switch (pacote->command.command_id) {
 		case 0:
@@ -220,74 +369,122 @@ void client_interface(struct package *pacote){
 			break;
 
 	}
+}*/
+
+/*********************************************
+*	FUNÇÕES AUXILIARES
+**********************************************/
+
+int assembly_client_inst(int *instruction, int instruction_id) {
+
+	*(instruction) = *(instruction) & 0x07ffffff;		// zera a parte que carrega as instrucoes
+
+	printf("instruction_id: %d\n", instruction_id);
+
+	if (instruction_id == ESTABLISH_CONNECTION) {
+		*(instruction) = *(instruction) | 0x08000000; 	// coloca o 1 no início
+		return SUCCESS;
+	}
+	if (instruction_id == UPLOAD) {
+		*(instruction) = *(instruction) | 0x10000000; 	//
+		// botar aqui a máscara específica
+		return SUCCESS;
+	}
+	if (instruction_id == DOWNLOAD) {
+		*(instruction) = *(instruction) | 0x18000000; 	//
+		// botar aqui a máscara específica
+		return SUCCESS;
+	}
+	if (instruction_id == LIST_SERVER) {
+		*(instruction) = *(instruction) | 0x20000000; 	//
+		// botar aqui a máscara específica
+		return SUCCESS;
+	}
+	if (instruction_id == LIST_CLIENT) {
+		*(instruction) = *(instruction) & 0x28000000; 	//
+		// botar aqui a máscara específica
+		return SUCCESS;
+	}
+	if (instruction_id == GET_SYNC_DIR) {
+		*(instruction) = *(instruction) | 0x30000000; 	//
+		// botar aqui a máscara específica
+		return SUCCESS;
+	}
+	if (instruction_id == EXIT) {
+		*(instruction) = *(instruction) | 0x38000000; 	//
+		return SUCCESS;
+	}
+
+	printf("Erro ao determinar funcao\n");
+	return ERROR;
 }
 
-int main(int argc, char *argv[] ){
+int desassembly_server_inst(int word) {
 
-    int port;
-    char * host;
+	if ( (word & 0x0000ff00) == 0x00000900 ) {
+		return CONNECTED;
+	}
+	if ( (word & 0x0000ff00) == 0x00000a00 ) {
+		return FIRST_TIME_USER;
+	}
+	if ( (word & 0x0000ff00) == 0x00000b00 ) {
+		return TOO_MANY_DEVICES;
+	}
+	if ( (word & 0x0000ff00) == 0x00000c00 ) {
+		return TOO_MANY_USERS;
+	}
+	if ( (word & 0x0000ff00) == 0x00000d00 ) {
+		return TERMINATE_CLIENT_EXECUTION;
+	}
 
-    struct package pacote; // pacote que será enviado
+	return ERROR;
+}
 
-    if(argc < 4) {
-    	printf("Utilizar:\n");
-    	printf("dropBoxClient <user> <address> <port>\n");
-    	exit(1);
+int handle_server_connectivity_status(int instruction_id){
+
+	if( instruction_id == FIRST_TIME_USER) {
+		printf("first time user\n");
+		interface();
+		return SUCCESS;
+	}
+
+	if( instruction_id == CONNECTED) {
+		printf("connected\n");
+		if (interface() == SUCCESS)
+			return SUCCESS;
+		else
+			printf("erro ao terminar\n");
+	}
+
+	if( instruction_id == TOO_MANY_DEVICES) {
+		printf("too many devices\n");
+		return SUCCESS;
+	}
+
+	if( instruction_id == TOO_MANY_USERS) {
+		printf("too many users\n");
+		return SUCCESS;
+	}
+
+	printf("Server instruction nao existe");
+
+}
+
+int send_file(char *filename) {
+	FILE * file;
+	file = fopen(filename,"r");
+    if (file == NULL){
+        return ERROR;
+    }
+		//datagram = instruction, id, user, buffer
+    struct datagram pkg = {0,1,"rafael"};
+
+    while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
+        //Envia o 'pkg.buffer'
+        //Bloqueia até receber o ack
+        //Quando receber o ack, continua no 'while'
     }
 
-    // Leitura de parametros
-	if(strlen(argv[1]) > USER_NAME_SIZE) {
-		printf("Erro: tamanho de usuario precisa ser menor que %d\n", USER_NAME_SIZE);
-		exit(1);
-	} else {
-		strcpy(user_name, argv[1]);  // User
-	}
-
-	strcpy(pacote.username, user_name);
-
-
-  host = malloc(strlen(argv[2])); // Host
-	strcpy(host, argv[2]);
-
-  port = atoi(argv[3]);   //Port
-
-    // Estabelece sessao entre cliente e servidor
-	if(login_server(host, port) == SUCCESS) {
-		//TODO: implementar
-	} else {
-		printf("[main] Erro ao estabelecer sessao em login_server\n");
-		exit(1);
-	}
-
-	char line[100];
-
-	while(1) {
-
-		scanf("%[^\n]", line);
-		getchar();
-
-		populate_instruction(line, &pacote.command);
-		fflush(stdin);
-
-		//pacote.command = command;
-
-		//FAZENDO UM TESTE NO CASO DO upload
-		//ideia é abrir testar se arquivo que quer enviar existe,
-		//caso exista coloca ele no buffer
-
-		client_interface(&pacote);
-
-		//send_file();
-
-		// envia o pacote
-		sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
-		printf("Enviado Pacote\n");
-		// recebe um ACK
-		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		printf("Recebido %s\n\n",buffer_receiver);
-
-		sleep(10);
-
-	}
-
+    fclose(file);
+    return SUCCESS;
 }
