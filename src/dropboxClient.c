@@ -234,7 +234,7 @@ int login_server(char *host, int port) {
 
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe o ACK do servidor
 
-	create_sync_dir();
+	//create_sync_dir();
 
 	return SUCCESS;
 }
@@ -451,11 +451,13 @@ int handle_server_connectivity_status(int instruction_id){
 
 	if( instruction_id == FIRST_TIME_USER) {
 		printf("first time user\n");
+		create_sync_dir();
 		interface();
 		return SUCCESS;
 	}
 
 	if( instruction_id == CONNECTED) {
+		create_sync_dir();
 		printf("connected\n");
 		if (interface() == SUCCESS)
 			return SUCCESS;
