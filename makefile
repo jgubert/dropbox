@@ -15,3 +15,17 @@ debug:
 
 clean:
 	rm bin/*
+
+clean_reset: clean_binarios clean_database clean_sync_folder clean_client_list
+
+clean_binarios:
+	rm bin/*
+
+clean_database:
+	rm -rf database
+
+clean_sync_folder:
+	rm -rf sync*
+
+clean_client_list:
+	rm clients.dat

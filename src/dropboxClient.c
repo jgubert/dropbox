@@ -41,7 +41,6 @@ int interface(){
 		/*
 		TRATAR A LINHA DE ENTRADA
 		*/
-		//printf("%d", strlen(line));
 		printf("line: %s\n", line);
 		//strcat(line, '\0');
 
@@ -92,6 +91,10 @@ int interface(){
 			printf("CLIENTE TERMINANDO\n");
 			break;
 		}
+
+		/****
+			CONTINUAR DAQUI
+		******/
 		//USEU A TOO_MANY_DEVICES PQ NAO SEI COLOCAR INSTRUCOES NA DESASSEMBLY_SERVER
 		else if (desassembly_server_inst(my_datagram.instruction) == TOO_MANY_DEVICES){
 			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
@@ -134,65 +137,34 @@ int main(int argc, char *argv[] ){
   	port = atoi(argv[3]);   //Port
 
     // Estabelece sessao entre cliente e servidor e recebe instrucao do servidor com status da conexao
-	if(login_server(host, port) == SUCCESS) {
-		//TODO: implementar
-	} else {
+	if(login_server(host, port) == ERROR) {
 		printf("[main] Erro ao estabelecer sessao em login_server\n");
 		exit(1);
 	}
 
-	// TRATAR O QUE VIER DO SERVIDOR AQUI!
+	// tratamento do que volta do servidar na hora da conexão
 	int instruction = my_datagram.instruction;
 
-	printf("%x\n", instruction);
+	//printf("DEBUG: %x\n", instruction);
 
 	int instruction_id = desassembly_server_inst(instruction);
-	printf("%d\n", instruction_id);
+	//printf("DEBUG: %d\n", instruction_id);
 
-	handle_server_connectivity_status(instruction_id);
+	if (handle_server_connectivity_status(instruction_id) == ERROR) {
+			printf("\nDEBUG terminando a main sem conseguir se conectar ao servidor...\n");
+			return 0;
+	}
 
-	printf("\nDEBUG terminando a main...\n");
+	create_sync_dir();
+	interface();
 
-
-	// entrar na interface AQUI
-		// receber os comandos, preparar a instrucao e mandar pro servidor
-
+	printf("\nDEBUG terminando a main conseguindo se conectar ao servidor...\n");
 
 	return 0; // teste, remover
 
-	// chamar o get sync_dir aqui
-
-	/*char line[100];
-
-	while(1) {
-
-		scanf("%[^\n]", line);
-		getchar();
-
-		populate_instruction(line, &pacote.command);
-		fflush(stdin);
-
-		//pacote.command = command;
-
-		//FAZENDO UM TESTE NO CASO DO upload
-		//ideia é abrir testar se arquivo que quer enviar existe,
-		//caso exista coloca ele no buffer
-
-		client_interface(&pacote);
-
-		//send_file();
-
-		// envia o pacote
-		sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
-		printf("Enviado Pacote\n");
-		// recebe um ACK
-		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-		printf("Recebido %s\n\n",buffer_receiver);
-
-		sleep(10);
-
-	}*/
 }
+
+
 
 int login_server(char *host, int port) {
 
@@ -221,7 +193,6 @@ int login_server(char *host, int port) {
 		perror("Error");
 	}
 	
-
 	// prepara instrução
 	assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
 
@@ -239,48 +210,6 @@ int login_server(char *host, int port) {
 	return SUCCESS;
 }
 
-
-
-
-/*int get_sync_dir(){
-	//TODO implementar
-	//envia um pacote com as informações do cliente
-
-	struct client cliente;
-
-	memcpy(cliente.userid,user_name,sizeof(user_name));
-	printf("%s\n", cliente.userid);
-	cliente.logged_int = 1;
-	cliente.command_id = 4; //4 É O CODIGO DA GET_SYNC_DIR
-
-
-	//enviando "cliente" pro servidor criar a pasta do usuario
-	while(1) {
-		printf("Tentando enviar\n");
-		int sendToResponse = sendto(socket_id, &cliente, 12500, 0, (struct sockaddr *)&peer, peerlen);
-		printf("Sendto: %d\n", sendToResponse);
-		if(sendToResponse < 0) {
-			printf("Falha ao enviar\n");
-		} else {
-			printf("Enviado! ");
-			printf("Numero de bytes: %d \n", sendToResponse);
-		}
-		// recebe um ACK
-
-		rc = recvfrom(socket_id,buffer_receiver, sizeof(buffer_receiver),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-
-		printf("RC: %d\n", rc);
-		if(rc > 0) {
-			printf("Recebido ACK na função get_sync_dir%s\n\n", buffer_receiver);
-			return SUCCESS;
-		} else {
-			printf("Timeout no request!\n");
-		}
-	}
-
-}*/
-
-
 //FUNÇÃO PARA CRIAR A PASTA DO USUARIO
 int create_sync_dir() {
 	//TODO implementar
@@ -297,86 +226,69 @@ int create_sync_dir() {
 	return SUCCESS;
 }
 
+int send_file(char *filename) {
+	FILE * file;
+	char dir[100] = "sync_dir_";
+	strcat(dir,user_name);
+	strcat(dir,"/");
+	strcat(dir,filename);
+
+	fprintf(stderr,"DEBUG: Entrou na funcao send_file.\n");
+	fprintf(stderr,"filename: %s\n", dir);
+
+	file = fopen(dir,"r");
+    if (file == NULL){
+        return ERROR;
+    }
+	
+	fprintf(stderr,"DEBUG: Abriu arquivo na funcao send_file.\n");
+
+	struct file_info fileinfo = {"teste","txt","ok",20};
+
+	int rc;
+	char buffer_ack[256];
+	bzero(buffer_ack,256);
+
+	do {
+		// envia o file_info
+		rc = sendto(socket_id, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr *)&peer, peerlen);
+		// recebe datagrama com ACK
+		rc = recvfrom(socket_id, buffer_ack, 256,0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+	
+		printf("%s\n", buffer_ack);
+
+	} while (rc < 0 || strcmp(buffer_ack,"ACK_FILEINFO") ); // recebe algo e recebe o ACK do servidor
 
 
-/* colocar na interface
+	fprintf(stderr,"DEBUG: ACK recebido funcao send_file.\n");
+	
 
-void send_file(char *file){
-	ssize_t bytes_read = 0; //quantidade de bytes lido ate entao
-	ssize_t bytes_send = 0; //foi enviado ate entao
-	ssize_t file_size = 0;
+	//datagram = instruction, id, user, buffer
+    struct datagram pkg = {0,1,"joao"};
 
-	int package_count = 0;
-	strcpy(buffer, file);
-	package_make();
+    while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
+        //Envia o 'pkg.buffer'
+        //Bloqueia até receber o ack
+        //Quando receber o ack, continua no 'while'
+    }
 
-	sendto(socket_id, &pacote, sizeof(struct package), 0, (struct sockaddr *)&peer, peerlen);
-	printf("Enviado Pacote\n");
+	fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
 
+	do {
+		// envia o file_info
+		rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+		// recebe datagrama com ACK
+		rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+
+
+	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
+
+    fclose(file);
+    return SUCCESS;
 }
 
-void package_make(char line){
-	scanf("%[^\n]", line);
-	getchar();
 
-	populate_instruction(line, &pacote.command);
-	fflush(stdin);
-}  */
 
-/*void client_interface(struct package *pacote){
-
-	switch (pacote->command.command_id) {
-		case 0:
-			fprintf(stderr, "Debug: Tentativa de ler arquivo!\n" );
-			FILE * arquivo;
-			char dir_name[100];
-			char * dir_name2;
-
-			bzero(dir_name,100);
-
-			memset(&dir_name2,0,sizeof(dir_name2));
-
-			printf("pos bzero: %s\n", dir_name);
-			printf("dirname2: %s\n", dir_name2);
-
-			strcat(dir_name2,"sync_dir_");
-			printf("dirname2: %s\n", dir_name2);
-			strcat(dir_name2,pacote->username);
-			printf("dirname2: %s\n", dir_name2);
-			strcat(dir_name2,"/");
-			printf("dirname2: %s\n", dir_name2);
-			strcat(dir_name2,pacote->command.path);
-			strcat(dir_name2,pacote->command.filename);
-
-			strcat(dir_name,dir_name2);
-
-			//strcpy(dir_name,"sync_dir_joao/path/teste.txt");
-
-			printf("Arquivo: %s\n", dir_name);
-
-			//snprintf( dir_name2,  sizeof(dir_name), "%s", dir_name );
-
-			//printf("Arquivo: %s\n", dir_name2);
-
-			arquivo = fopen(dir_name,"r");
-			//arquivo = fopen(dir_name, "r");
-		 	if (arquivo == NULL){
-		 		fprintf(stderr, "Debug: não abriu arquivo\n" );
-				exit(1);
-			}
-
-			fprintf(stderr, "Debug: ABRIU ESSE CARALHO\n" );
-
-			fread(pacote->buffer,1,1250,arquivo);
-
-			fclose(arquivo);
-			break;
-
-		default:
-			break;
-
-	}
-}*/
 
 /*********************************************
 *	FUNÇÕES AUXILIARES
@@ -451,91 +363,32 @@ int handle_server_connectivity_status(int instruction_id){
 
 	if( instruction_id == FIRST_TIME_USER) {
 		printf("first time user\n");
-		create_sync_dir();
-		interface();
+		//create_sync_dir();
+		//interface();
 		return SUCCESS;
 	}
 
 	if( instruction_id == CONNECTED) {
-		create_sync_dir();
+		//create_sync_dir();
 		printf("connected\n");
-		if (interface() == SUCCESS)
-			return SUCCESS;
-		else
-			printf("erro ao terminar\n");
+		return SUCCESS;
+		//if (interface() == SUCCESS)
+		//	return SUCCESS;
+		//else
+		//	printf("erro ao terminar\n");
 	}
 
 	if( instruction_id == TOO_MANY_DEVICES) {
 		printf("too many devices\n");
-		return SUCCESS;
+		return ERROR;
 	}
 
 	if( instruction_id == TOO_MANY_USERS) {
 		printf("too many users\n");
-		return SUCCESS;
+		return ERROR;
 	}
 
 	printf("Server instruction nao existe");
 
 }
 
-int send_file(char *filename) {
-	FILE * file;
-	char dir[100] = "sync_dir_";
-	strcat(dir,user_name);
-	strcat(dir,"/");
-	strcat(dir,filename);
-
-	fprintf(stderr,"DEBUG: Entrou na funcao send_file.\n");
-	fprintf(stderr,"filename: %s\n", dir);
-
-	file = fopen(dir,"r");
-    if (file == NULL){
-        return ERROR;
-    }
-	
-	fprintf(stderr,"DEBUG: Abriu arquivo na funcao send_file.\n");
-
-	struct file_info fileinfo = {"teste","txt","ok",20};
-
-	int rc;
-	char buffer_ack[256];
-	bzero(buffer_ack,256);
-
-	do {
-		// envia o file_info
-		rc = sendto(socket_id, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr *)&peer, peerlen);
-		// recebe datagrama com ACK
-		rc = recvfrom(socket_id, buffer_ack, 256,0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-	
-		printf("%s\n", buffer_ack);
-
-	} while (rc < 0 || strcmp(buffer_ack,"ACK_FILEINFO") ); // recebe algo e recebe o ACK do servidor
-
-
-	fprintf(stderr,"DEBUG: ACK recebido funcao send_file.\n");
-	
-
-	//datagram = instruction, id, user, buffer
-    struct datagram pkg = {0,1,"joao"};
-
-    while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
-        //Envia o 'pkg.buffer'
-        //Bloqueia até receber o ack
-        //Quando receber o ack, continua no 'while'
-    }
-
-	fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
-
-	do {
-		// envia o file_info
-		rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
-		// recebe datagrama com ACK
-		rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
-
-
-	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
-
-    fclose(file);
-    return SUCCESS;
-}
