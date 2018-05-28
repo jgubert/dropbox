@@ -151,14 +151,12 @@ int main(int argc, char *argv[]) {
     int rc;
     struct arg_struct *args = NULL;
 
-	//Tirei essas declarações de dentro do while
 	SOCKET clientSocket;
    	struct  sockaddr_in clientAddr;
     unsigned int clientLen;
     clientLen = sizeof(clientAddr);
 
     while(1) {
-
     	
     	pthread_t thread;
 		rc = recvfrom(s, &received_datagram, sizeof(struct datagram), 0, (struct sockaddr *) &clientAddr,(socklen_t *)&clientLen);
@@ -178,8 +176,6 @@ int main(int argc, char *argv[]) {
 		if ( pthread_create(&thread, NULL, servidor, args) != 0 ) {
 			printf("Erro na criação da thread\n");
 		}
-
-
     }
 }
 
@@ -228,57 +224,7 @@ int init_server() {
 		}
 
 	}
-	// carrega informacoes dos clientes que foram salvos
 }
-
-    /*create_database_structure();
-	printf("Criou database!\n\n");
-
-	// ------------ TESTANDO GET_SYNC_DIR ----------
-
-	while(1) {
-		ssize_t teste;
-
-		struct client cliente;
-
-		printf("Esperando pacote!\n");
-
-		teste = recvfrom(s, &cliente, 12500, 0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
-
-
-		strcpy(buffer,"ACK");
-
-		if(teste != -1)
-			printf("Pacote recebido! %zd\n", teste);
-		else{
-			printf("Pacote não recebido!\n");
-		}
-		//sleep(1);
-	    n = sendto(s,buffer,sizeof(buffer),0,(struct sockaddr *) &peer, peerlen);
-		if(n < 0){
-			printf("Erro no envio do ACK!\n");
-		}
-
-		if(cliente.command_id == GET_SYNC_DIR){
-		printf("%s\n", cliente.userid);
-			create_path(cliente.userid);
-
-		}
-
-	}
-
-	// ------------ FIM TESTE ----------------------
-
-
-    receive_file(s, (struct sockaddr *) &peer, peerlen);
-
-	return 0;*/
-
-
-
-
-
-
 
 int create_database_structure() {
 
@@ -296,78 +242,47 @@ int create_database_structure() {
 
 }
 
-/*
-void receive_file(int s, struct sockaddr* peer, int peerlen){
-  	struct package pack = create_package(s, peer, peerlen);
+void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *userid){
+	int rc;
+	struct file_info fileinfo;
+	char buffer_ack[15];
+	bzero(buffer_ack,15);
+	struct datagram pkg;
 
-  	FILE* file_complete;
-  	ssize_t bytes_receive = 0;
+	char dir[100] = "database/sync_dir_";
+	strcat(dir, userid);
+	strcat(dir,"/");
 
-  	char buffer[1250];
+	printf("DEBUG: Entrou na receive_files\n");
 
-	char dir[100] = "sync_dir_";
-	strcat(dir, pack.username);
-	strcat(dir, "/");
-  	strcat(dir, pack.command.filename);
-	file_complete = fopen(dir, "w");
+	rc = recvfrom(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+	strcpy(buffer_ack, "ACK_FILEINFO");
+	fprintf(stderr,"buffer_ack: %s\n",buffer_ack);
+	rc = sendto(s, buffer_ack, 15, 0, (struct sockaddr*) peer, peerlen);
 
-  	fwrite(pack.buffer, 1, sizeof(pack.buffer), file_complete);
-  	fclose(file_complete);
+	fprintf(stderr,"DEBUG: ACK enviado receive_files\n");
+
+	strcat(dir,fileinfo.name);
+	strcat(dir,".");
+	strcat(dir,fileinfo.extension);
+
+	fprintf(stderr,"DEBUG: %s\n", dir);
+
+	FILE * write_file;
+    write_file = fopen (dir, "w");
+    if (write_file == NULL) {
+        printf("ERRO AO ABRIR O ARQUIVO PARA ESCRITA!\n");
+    }
+
+	rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+	pkg.id = 2;
+	rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
+
+	fwrite(pkg.buffer, BUFFER_SIZE, 1, write_file);
+	fclose(write_file);
 }
 
-int client_count(char *user){
-    int x, cont = 0;
-
-    while (semaforo == 1){
-
-    }
-    semaforo = 1;
-    for (x = 0; x < 10; x++){
-        if (strcmp(user,clientes[x].userid) == 0 && clientes[x].logged_int == 1)
-            cont++;
-    }
-
-    printf("Cliente tem %d conexoes \n", cont);
-
-    semaforo = 0;
-
-    return cont;
-}
-
-void send_file2(int s, char* user, struct sockaddr * peer, int peerlen){
-
-    char dir[200] = "sync_dir_";
-    strcat(dir,user);
-    strcat(dir,"/");
-
-    char buffer[1250];
-    ssize_t bytes_send;
-    ssize_t bytes_read;
-    FILE* file_complete;
-
-    bytes_send = recvfrom(s, buffer, sizeof(buffer),0, (struct sockaddr *) &peer,(socklen_t *)&peerlen);
-      if (bytes_send < 0) printf("Erro\n");
-      strcat(dir,buffer);
-
-    if ((file_complete = fopen(dir, "r")) == NULL) {
-        printf("Erro \n");
-        return;
-    }
-
-    while ((bytes_read = fread(buffer, 1,sizeof(buffer), file_complete)) > 0){
-        if ((bytes_send = sendto(s, buffer, bytes_read, 0, (struct sockaddr *)&peer, peerlen)) < bytes_read) { // Se a quantidade de bytes enviados, não for igual a que a gente leu, erro
-
-            printf("Erro\n");
-            return;
-        }
-    }
-
-    fclose(file_complete);
-}
-
-
-
-*/
 
 
 /*********************************************
@@ -470,45 +385,12 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 
-
-	/*if (instruction_id == UPLOAD) {
-		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
-		// botar aqui a máscara específica
-		return SUCCESS;
-	}
-	if (instruction_id == DOWNLOAD) {
-		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
-		// botar aqui a máscara específica
-		return SUCCESS;
-	}
-	if (instruction_id == LIST_SERVER) {
-		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
-		// botar aqui a máscara específica
-		return SUCCESS;
-	}
-	if (instruction_id == LIST_CLIENT) {
-		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
-		// botar aqui a máscara específica
-		return SUCCESS;
-	}
-	if (instruction_id == GET_SYNC_DIR) {
-		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
-		// botar aqui a máscara específica
-		return SUCCESS;
-	}
-	if (instruction_id == EXIT) {
-		*(instruction) = *(instruction) & 0x3fffffff; // coloca o 0 no início e 0 em custom code bit
-		// botar aqui a máscara específica
-		return SUCCESS;
-	}*/
-
-	printf("Erro ao determinar funcao\n");
+	printf("Erro ao determinar assembly_server_inst()\n");
 	return ERROR;
 }
 
 int has_too_many_devices(char username[]) {
 
-	//printf("Em has_to_many_devices: Nome do usuario eh: %s\n", username);
 	struct client c = get_client(username);
 
 	for(int i=0; i<MAXDEVICES; i++) {
@@ -609,46 +491,3 @@ int load_clients() {
     return SUCCESS;
 }
 
-void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *userid){
-	int rc;
-	struct file_info fileinfo;
-	char buffer_ack[15];
-	bzero(buffer_ack,15);
-	struct datagram pkg;
-
-	char dir[100] = "database/sync_dir_";
-	strcat(dir, userid);
-	strcat(dir,"/");
-
-	printf("DEBUG: Entrou na receive_files\n");
-
-	rc = recvfrom(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
-	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
-	strcpy(buffer_ack, "ACK_FILEINFO");
-	fprintf(stderr,"buffer_ack: %s\n",buffer_ack);
-	rc = sendto(s, buffer_ack, 15, 0, (struct sockaddr*) peer, peerlen);
-
-	fprintf(stderr,"DEBUG: ACK enviado receive_files\n");
-
-	strcat(dir,fileinfo.name);
-	strcat(dir,".");
-	strcat(dir,fileinfo.extension);
-
-	fprintf(stderr,"DEBUG: %s\n", dir);
-
-	FILE * write_file;
-    write_file = fopen (dir, "w");
-    if (write_file == NULL) {
-        printf("ERRO AO ABRIR O ARQUIVO PARA ESCRITA!\n");
-    }
-
-	rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
-	pkg.id = 2;
-	rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
-
-	fwrite(pkg.buffer, BUFFER_SIZE, 1, write_file);
-	fclose(write_file);
-
-
-
-}
