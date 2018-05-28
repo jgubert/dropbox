@@ -39,14 +39,22 @@
 #define TOO_MANY_DEVICES 25
 #define TOO_MANY_USERS 26
 #define TERMINATE_CLIENT_EXECUTION 27
-#define FILE_RECEIVED 28
+#define START_SENDING 28
 
 #define SOCKET int
+
+struct file_info{
+  char name[MAXNAME];
+  char extension[MAXNAME];
+  char last_modified[MAXNAME];
+  int size;
+};
 
 struct datagram {
   int instruction;
   int id;
   char username[USER_NAME_MAX_LENGTH];
+  struct file_info file;
   char buffer[BUFFER_SIZE];
 };
 
@@ -66,13 +74,6 @@ struct package {
 	char username[USER_NAME_MAX_LENGTH];
 	struct instruction command;
 	char buffer[BUFFER_SIZE];
-};
-
-struct file_info{
-  char name[MAXNAME];
-  char extension[MAXNAME];
-  char last_modified[MAXNAME];
-  int size;
 };
 
 struct client{
