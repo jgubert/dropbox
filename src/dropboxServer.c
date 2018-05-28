@@ -107,7 +107,7 @@ void* servidor(void* args) {
 		printf("Servidor entrou no if do UPLOAD!\n");
 
 		// FILE_RECEIVED é temporario.. primeiro envia o ACK para começar o envio do arquivo.
-		assembly_server_inst(&arguments->my_datagram.instruction, TOO_MANY_DEVICES);
+		assembly_server_inst(&arguments->my_datagram.instruction, START_SENDING);
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 
@@ -384,9 +384,9 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 
 	// UPLOAD
 
-	if (instruction_id == FILE_RECEIVED) {
+	if (instruction_id == START_SENDING) {
 		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
-		*(instruction) = *(instruction) | 0x00000e00; // add instrucao
+		*(instruction) = *(instruction) | 0x00001100; // add instrucao + status
 		return SUCCESS;
 	}
 

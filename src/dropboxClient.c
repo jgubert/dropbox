@@ -32,6 +32,8 @@ struct datagram my_datagram; // datagrama que será enviado
 int interface(){
 
 	char line[100];
+	char file_path[100];	// usado em upload e download
+	char file_name[100]; 	// usado em download e upload
 	char *command;
 
 	while(1) {
@@ -44,16 +46,31 @@ int interface(){
 		printf("line: %s\n", line);
 		//strcat(line, '\0');
 
-		strcpy(command, line);
+		command = strtok(line, " ");
 
 		printf("command: %s\n", command);
 
 
 		// PREPARA INSTRUCAO
 		if(strcmp(command, "upload") == 0){
-			printf("entrou no upload\n");
-			assembly_client_inst(&my_datagram.instruction, UPLOAD);
 
+			char file_path[100];
+
+			command = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona)
+
+			char* start_name_pointer;
+			if ((int*)(start_name_pointer = strrchr(command, '/')) == NULL) { // last occurrence of '/'
+				strcpy(file_path, command);
+				strcpy(file_name, command);
+			} 
+
+			else {
+				strncpy(file_path, command, start_name_pointer - command+1);
+				strcpy(file_name, start_name_pointer+1);
+			}
+			printf("Path: %s\n", file_path);
+			printf("File: %s\n", file_name);
+			assembly_client_inst(&my_datagram.instruction, UPLOAD);
 		}
 
 		else if(strcmp(command, "download") == 0){
@@ -87,20 +104,17 @@ int interface(){
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
 		
-		// TRATA O QUE VOLTAR DO SERVIDOR
+		// TRATA INSTRUCAO QUE VOLTAR DO SERVIDOR
 
 		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
 			printf("CLIENTE TERMINANDO\n");
 			break;
 		}
 
-		/****
-			CONTINUAR DAQUI
-		******/
-		//USEU A TOO_MANY_DEVICES PQ NAO SEI COLOCAR INSTRUCOES NA DESASSEMBLY_SERVER
-		else if (desassembly_server_inst(my_datagram.instruction) == TOO_MANY_DEVICES){
+
+		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
 			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
-			send_file("teste.txt");
+			send_file(file_name);
 			break;
 		}
 
@@ -354,8 +368,8 @@ int desassembly_server_inst(int word) {
 	}
 
 	if ( (word & 0x0000f800) == 0x00001000) {
-		printf("entrou no terminate"); 
-		return UPLOAD;
+		printf("entrou no upload no desassembly\n"); 
+		return START_SENDING;
 	}
 
 	return ERROR;
