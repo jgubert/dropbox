@@ -14,5 +14,6 @@ int assembly_client_inst(int *instruction, int instruction_id);
 int login_server(char *host, int port);
 int handle_server_connectivity_status(int instruction_id);
 int desassembly_server_inst(int word);
+int desassembly_server_inst_status(int word, int inst);
 int interface();
 int create_sync_dir();

@@ -16,7 +16,7 @@ debug:
 clean:
 	rm bin/*
 
-clean_reset: clean_binarios clean_database clean_sync_folder clean_client_list
+clean_reset: clean_database clean_sync_folder clean_client_list clean_binarios
 
 clean_binarios:
 	rm bin/*

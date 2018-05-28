@@ -49,6 +49,7 @@ int interface(){
 		printf("command: %s\n", command);
 
 
+		// PREPARA INSTRUCAO
 		if(strcmp(command, "upload") == 0){
 			printf("entrou no upload\n");
 			assembly_client_inst(&my_datagram.instruction, UPLOAD);
@@ -76,7 +77,7 @@ int interface(){
 			assembly_client_inst(&my_datagram.instruction, EXIT);
 		}
 
-
+		// ENVIA DATAGRAMA COM INSTRUCAO PRO SERVIDOR
 		do {
 			// envia datagrama
 			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
@@ -85,7 +86,8 @@ int interface(){
 
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
-		// tratar o que voltar do servidor
+		
+		// TRATA O QUE VOLTAR DO SERVIDOR
 
 		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
 			printf("CLIENTE TERMINANDO\n");
@@ -205,8 +207,6 @@ int login_server(char *host, int port) {
 
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe o ACK do servidor
 
-	//create_sync_dir();
-
 	return SUCCESS;
 }
 
@@ -228,15 +228,17 @@ int create_sync_dir() {
 
 int send_file(char *filename) {
 	FILE * file;
-	char dir[100] = "sync_dir_";
-	strcat(dir,user_name);
-	strcat(dir,"/");
-	strcat(dir,filename);
+	//char dir[100] = "sync_dir_";
+	//strcat(dir,user_name);
+	//strcat(dir,"/");
+	//strcat(dir,filename);
 
 	fprintf(stderr,"DEBUG: Entrou na funcao send_file.\n");
-	fprintf(stderr,"filename: %s\n", dir);
+	//fprintf(stderr,"filename: %s\n", dir);
+	fprintf(stderr,"filename: %s\n", filename);
 
-	file = fopen(dir,"r");
+	//file = fopen(dir,"r");
+	file = fopen(filename, "r");
     if (file == NULL){
         return ERROR;
     }
@@ -289,7 +291,6 @@ int send_file(char *filename) {
 
 
 
-
 /*********************************************
 *	FUNÇÕES AUXILIARES
 **********************************************/
@@ -320,7 +321,7 @@ int assembly_client_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 	if (instruction_id == LIST_CLIENT) {
-		*(instruction) = *(instruction) & 0x28000000; 	//
+		*(instruction) = *(instruction) | 0x28000000; 	//
 		// botar aqui a máscara específica
 		return SUCCESS;
 	}
@@ -340,21 +341,49 @@ int assembly_client_inst(int *instruction, int instruction_id) {
 
 int desassembly_server_inst(int word) {
 
-	if ( (word & 0x0000ff00) == 0x00000900 ) {
-		return CONNECTED;
+	// mascara = 0x0000f800
+
+	if ( (word & 0x0000f800) == 0x00000800) {  // se for ESTABLISH_CONNECTION
+		printf("entrou no establish\n");
+		return desassembly_server_inst_status(word, ESTABLISH_CONNECTION);
 	}
-	if ( (word & 0x0000ff00) == 0x00000a00 ) {
-		return FIRST_TIME_USER;
-	}
-	if ( (word & 0x0000ff00) == 0x00000b00 ) {
-		return TOO_MANY_DEVICES;
-	}
-	if ( (word & 0x0000ff00) == 0x00000c00 ) {
-		return TOO_MANY_USERS;
-	}
-	if ( (word & 0x0000ff00) == 0x00000d00 ) {
+
+	if ( (word & 0x0000f800) == 0x00003800) {
+		printf("entrou no terminate"); 
 		return TERMINATE_CLIENT_EXECUTION;
 	}
+
+	if ( (word & 0x0000f800) == 0x00001000) {
+		printf("entrou no terminate"); 
+		return UPLOAD;
+	}
+
+	return ERROR;
+}
+
+
+int desassembly_server_inst_status(int word, int inst) {
+
+	// mascara = 0x00000700
+
+	// STATUS PARA ESTABLISH_CONNECTION
+	if( inst == ESTABLISH_CONNECTION) {
+		printf("entrou no status");
+		if ( (word & 0x00000700) == 0x00000100) {
+			return CONNECTED;
+		}
+		if ( (word & 0x00000700) == 0x00000200) {
+			return FIRST_TIME_USER;
+		}
+		if ( (word & 0x00000700) == 0x00000300) {
+			return TOO_MANY_DEVICES;
+		}
+		if ( (word & 0x00000700) == 0x00000400) {
+			return TOO_MANY_USERS;
+		}
+	}
+
+	// STATUS PARA OUTRAS INSTRUÇÕES
 
 	return ERROR;
 }
@@ -363,8 +392,6 @@ int handle_server_connectivity_status(int instruction_id){
 
 	if( instruction_id == FIRST_TIME_USER) {
 		printf("first time user\n");
-		//create_sync_dir();
-		//interface();
 		return SUCCESS;
 	}
 
@@ -372,10 +399,6 @@ int handle_server_connectivity_status(int instruction_id){
 		//create_sync_dir();
 		printf("connected\n");
 		return SUCCESS;
-		//if (interface() == SUCCESS)
-		//	return SUCCESS;
-		//else
-		//	printf("erro ao terminar\n");
 	}
 
 	if( instruction_id == TOO_MANY_DEVICES) {
@@ -389,6 +412,7 @@ int handle_server_connectivity_status(int instruction_id){
 	}
 
 	printf("Server instruction nao existe");
+	return ERROR;
 
 }
 

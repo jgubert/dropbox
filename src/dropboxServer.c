@@ -349,6 +349,7 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 
+	// LOGIN_SERVER
 	if (instruction_id == CONNECTED) {
 		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
 		*(instruction) = *(instruction) | 0x00000900; // add instrucao
@@ -373,11 +374,15 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 
+	// EXIT
+
 	if (instruction_id == TERMINATE_CLIENT_EXECUTION) {
 		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
-		*(instruction) = *(instruction) | 0x00000d00; // add instrucao
+		*(instruction) = *(instruction) | 0x00003800; // add instrucao
 		return SUCCESS;
 	}
+
+	// UPLOAD
 
 	if (instruction_id == FILE_RECEIVED) {
 		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
