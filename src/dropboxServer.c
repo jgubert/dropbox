@@ -115,8 +115,8 @@ void* servidor(void* args) {
 
 		// receber os dados e salvar no arquivo
 
-		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
-		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+		//assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		//sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
 
 	if (instruction_id == DOWNLOAD){
@@ -128,8 +128,8 @@ void* servidor(void* args) {
 
 		send_file(arguments->s,(struct sockaddr*)&arguments->clientAddr, clientLen,arguments->my_datagram.username);
 
-		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
-		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+		//assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		//sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
 
 	// ELSE, OUTRAS INSTRUCOES
