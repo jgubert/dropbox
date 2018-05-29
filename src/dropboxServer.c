@@ -357,6 +357,8 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 	fclose(file);
 
 	fprintf(stderr,"DEBUG: Saindo da função send_file\n");
+	fprintf(stderr,"\n");
+
 
 
 }
