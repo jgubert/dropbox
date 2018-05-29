@@ -330,7 +330,7 @@ int send_file(char *filename) {
 		rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
 
 
-	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
+	} while (rc < 0 || pkg.id != 2 ); // recebe algo e recebe o ACK do servidor
 
     fclose(file);
 

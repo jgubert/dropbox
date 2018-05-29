@@ -133,6 +133,7 @@ void* servidor(void* args) {
 	}
 
 	// ELSE, OUTRAS INSTRUCOES
+	printf("Acabou a thread\n");
 
 }
 
@@ -347,9 +348,10 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 		rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
 	// recebe datagrama com ACK
 		rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+		printf("%d\n\n", pkg.id);
 
 
-	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
+	} while (rc < 0 || pkg.id != 2 ); // recebe algo e recebe o ACK do servidor
 
 	fclose(file);
 
@@ -403,6 +405,7 @@ int desassembly_client_inst(int word) {
 	}
 
 	if ( (instruction & 0xf8000000) == 0x38000000 ) {
+		printf("desassembly_client_inst, ENTROU NO EXIT");
 		return EXIT;
 	}
 
