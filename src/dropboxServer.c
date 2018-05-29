@@ -261,6 +261,7 @@ void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *u
 	struct datagram pkg;
 
 	char dir[100] = "database/sync_dir_";
+
 	strcat(dir, userid);
 	strcat(dir,"/");
 
@@ -275,7 +276,7 @@ void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *u
 	fprintf(stderr,"DEBUG: ACK enviado receive_files\n");
 
 	strcat(dir,fileinfo.name);
-	strcat(dir,".");
+	//strcat(dir,".");
 	strcat(dir,fileinfo.extension);
 
 	fprintf(stderr,"DEBUG: %s\n", dir);
@@ -290,7 +291,7 @@ void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *u
 	pkg.id = 2;
 	rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
 
-	fwrite(pkg.buffer, BUFFER_SIZE, 1, write_file);
+	fwrite(pkg.buffer, fileinfo.size, 1, write_file);
 	fclose(write_file);
 }
 
