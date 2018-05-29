@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
     clientLen = sizeof(clientAddr);
 
     while(1) {
-    	
+
     	pthread_t thread;
 		rc = recvfrom(s, &received_datagram, sizeof(struct datagram), 0, (struct sockaddr *) &clientAddr,(socklen_t *)&clientLen);
 
@@ -317,12 +317,14 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 			return ERROR;
 	}
 	fprintf(stderr,"DEBUG: abriu arquivo send_file\n");
+
 	struct stat st;
 	stat(dir, &st);
 	int length = st.st_size;
 	//fileinfo.size = length;
-	fileinfo.size = 27;
-	printf("Size: %d\n", fileinfo.size);
+	fileinfo.size = length;
+
+	printf("Size: %d\n", length);
 
 	rc = sendto(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, peerlen);
 
@@ -574,4 +576,3 @@ int load_clients() {
 
     return SUCCESS;
 }
-
