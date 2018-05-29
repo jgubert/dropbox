@@ -333,6 +333,8 @@ int send_file(char *filename) {
 	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
 
     fclose(file);
+
+		fprintf(stderr,"DEBUG: Saindo da função send_file\n");
     return SUCCESS;
 }
 
