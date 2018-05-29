@@ -122,7 +122,7 @@ void* servidor(void* args) {
 	if (instruction_id == DOWNLOAD){
 		printf("Servidor entrou no if do DOWNLOAD!\n");
 
-		assembly_server_inst(&arguments->my_datagram.instruction, TOO_MANY_USERS);
+		assembly_server_inst(&arguments->my_datagram.instruction, START_DOWNLOAD);
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 
