@@ -17,7 +17,7 @@
 #define BUFFER_SIZE 1250
 #define MAXUSERS 10
 #define MAXDEVICES 2
-#define MAXNAMES 8
+#define MAXNAMES 15
 #define MAXNAME 8
 #define MAXFILES 10
 #define USER_NAME_MAX_LENGTH 32
@@ -45,7 +45,7 @@
 #define SOCKET int
 
 struct file_info{
-  char name[MAXNAME];
+  char name[MAXNAMES];
   char extension[MAXNAME];
   char last_modified[MAXNAME];
   int size;
