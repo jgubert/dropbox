@@ -122,13 +122,11 @@ int interface(){
 		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
 			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
 			send_file(command); // command equal to the file_path + file_name
-			break;
 		}
 
 		else if (desassembly_server_inst(my_datagram.instruction) == START_DOWNLOAD){
 			printf("CLIENTE VAI FAZER DOWNLOAD!\n");
 			get_file(command);
-			break;
 		}
 
 	}
