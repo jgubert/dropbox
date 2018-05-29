@@ -43,12 +43,12 @@ int interface(){
 		/*
 		TRATAR A LINHA DE ENTRADA
 		*/
-		printf("line: %s\n", line);
+		//printf("line: %s\n", line);
 		//strcat(line, '\0');
 
 		command = strtok(line, " ");
 
-		printf("command: %s\n", command);
+		//printf("command: %s\n", command);
 
 
 		// PREPARA INSTRUCAO
@@ -70,18 +70,18 @@ int interface(){
 			start_name_pointer = strrchr(my_datagram.file.name, '.');
 			strcpy(my_datagram.file.extension, start_name_pointer);
 
-			printf("command: %s\n", command);
-			printf("Path: %s\n", file_path);
-			printf("File: %s\n", my_datagram.file.name);
-			printf("Extension: %s\n", my_datagram.file.extension);
+			//printf("command: %s\n", command);
+			//printf("Path: %s\n", file_path);
+			//printf("File: %s\n", my_datagram.file.name);
+			//printf("Extension: %s\n", my_datagram.file.extension);
 
 			assembly_client_inst(&my_datagram.instruction, UPLOAD);
 		}
 
 		else if(strcmp(command, "download") == 0){
 			command = strtok(NULL, "");
-			printf("entrou no download\n");
-			printf("filename = %s\n", command);
+			//printf("entrou no download\n");
+			//printf("filename = %s\n", command);
 			assembly_client_inst(&my_datagram.instruction, DOWNLOAD);
 		}
 
@@ -98,7 +98,7 @@ int interface(){
 		}
 
 		else if(strcmp(command, "exit") == 0){
-			printf("entrou no exit da interface\n");
+			//printf("entrou no exit da interface\n");
 			assembly_client_inst(&my_datagram.instruction, EXIT);
 		}
 
@@ -115,17 +115,17 @@ int interface(){
 		// TRATA INSTRUCAO QUE VOLTAR DO SERVIDOR
 
 		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
-			printf("CLIENTE TERMINANDO\n");
+			printf("-- CLIENT TERMINANDO --\n");
 			break;
 		}
 
 		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
-			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
+			printf(" --CLIENT UPDATE --\n");
 			send_file(command); // command equal to the file_path + file_name
 		}
 
 		else if (desassembly_server_inst(my_datagram.instruction) == START_DOWNLOAD){
-			printf("CLIENTE VAI FAZER DOWNLOAD!\n");
+			printf("-- CLIENT DOWNLOAD --\n");
 			get_file(command);
 		}
 
@@ -243,9 +243,9 @@ int create_sync_dir() {
 	strcat(dir_name,user_name);
 
 	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
-		printf("Pasta %s criada.\n", dir_name);
+		//printf("Pasta %s criada.\n", dir_name);
 	else{
-		printf("Pasta %s já existe.\n", dir_name);
+		//printf("Pasta %s já existe.\n", dir_name);
 		return ERROR;
 	}
 	return SUCCESS;
@@ -253,22 +253,17 @@ int create_sync_dir() {
 
 int send_file(char *filename) {
 	FILE * file;
-	//char dir[100] = "sync_dir_";
-	//strcat(dir,user_name);
-	//strcat(dir,"/");
-	//strcat(dir,filename);
 
-	fprintf(stderr,"DEBUG: Entrou na funcao send_file.\n");
-	//fprintf(stderr,"filename: %s\n", dir);
-	fprintf(stderr,"filename: %s\n", filename);
 
-	//file = fopen(dir,"r");
+	//fprintf(stderr,"DEBUG: Entrou na funcao send_file.\n");
+	//fprintf(stderr,"filename: %s\n", filename);
+
 	file = fopen(filename, "r");
     if (file == NULL){
         return ERROR;
     }
 
-	fprintf(stderr,"DEBUG: Abriu arquivo na funcao send_file.\n");
+	//fprintf(stderr,"DEBUG: Abriu arquivo na funcao send_file.\n");
 
 	struct stat st;
 	stat(filename, &st);
@@ -284,8 +279,8 @@ int send_file(char *filename) {
 	ext = strchr(filename2, '.');
 	name = strtok(filename, ".");
 
-	fprintf(stderr,"DEBUG: name = %s\n", name);
-	fprintf(stderr,"DEBUG: ext = %s\n", ext);
+	//fprintf(stderr,"DEBUG: name = %s\n", name);
+	//fprintf(stderr,"DEBUG: ext = %s\n", ext);
 
 	struct file_info fileinfo;
 	strcpy(fileinfo.name, name);
@@ -308,7 +303,7 @@ int send_file(char *filename) {
 	} while (rc < 0 || strcmp(buffer_ack,"ACK_FILEINFO") ); // recebe algo e recebe o ACK do servidor
 
 
-	fprintf(stderr,"DEBUG: ACK recebido funcao send_file.\n");
+	//fprintf(stderr,"DEBUG: ACK recebido funcao send_file.\n");
 
 
 	//datagram = instruction, id, user, buffer
@@ -321,7 +316,7 @@ int send_file(char *filename) {
         //Quando receber o ack, continua no 'while'
     }
 
-	fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
+	//fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
 
 	do {
 		// envia o file_info
@@ -334,15 +329,15 @@ int send_file(char *filename) {
 
     fclose(file);
 
-		fprintf(stderr,"DEBUG: Saindo da função send_file\n");
+		//fprintf(stderr,"DEBUG: Saindo da função send_file\n");
     return SUCCESS;
 }
 
 int get_file(char *filename){
 	FILE * write_file;
 
-	fprintf(stderr,"DEBUG: Entrou na funcao get_file.\n");
-	fprintf(stderr,"filename: %s\n", filename);
+	//fprintf(stderr,"DEBUG: Entrou na funcao get_file.\n");
+	//fprintf(stderr,"filename: %s\n", filename);
 
 	write_file = fopen(filename, "w");
     if (write_file == NULL){
@@ -358,8 +353,8 @@ int get_file(char *filename){
 	ext = strchr(filename2, '.');
 	name = strtok(filename, ".");
 
-	fprintf(stderr,"DEBUG: name = %s\n", name);
-	fprintf(stderr,"DEBUG: ext = %s\n", ext);
+	//fprintf(stderr,"DEBUG: name = %s\n", name);
+	//fprintf(stderr,"DEBUG: ext = %s\n", ext);
 
 	struct file_info fileinfo;
 	strcpy(fileinfo.name, name);
@@ -377,14 +372,14 @@ int get_file(char *filename){
 
 	} while (rc < 0 || fileinfo.size == 0 ); // recebe algo e recebe o ACK do servidor
 
-	fprintf(stderr,"DEBUG: ACK recebido funcao get_file.\n");
-	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+	//fprintf(stderr,"DEBUG: ACK recebido funcao get_file.\n");
+	//printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
 
 
 	struct datagram pkg;
 
 	rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer,(socklen_t *) &peerlen);
-	printf("DEBUG DATAGRAM\nInstruction: %d\nId: %d\nUsername: %s\n",pkg.instruction,pkg.id,pkg.username);
+	//printf("DEBUG DATAGRAM\nInstruction: %d\nId: %d\nUsername: %s\n",pkg.instruction,pkg.id,pkg.username);
 
 	pkg.id = 2;
 	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
@@ -393,13 +388,13 @@ int get_file(char *filename){
 	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
 	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
 
-	fprintf(stderr, "RC: %d\n", rc);
+	//fprintf(stderr, "RC: %d\n", rc);
 	fwrite(pkg.buffer, fileinfo.size, 1, write_file);
 	fclose(write_file);
 
-	fprintf(stderr,"Buffer recebido: %s\n", pkg.buffer);
+	//fprintf(stderr,"Buffer recebido: %s\n", pkg.buffer);
 
-	fprintf(stderr,"DEBUG: Saindo da funcao get_file.\n");
+	//fprintf(stderr,"DEBUG: Saindo da funcao get_file.\n");
 
 
 	return SUCCESS;
@@ -415,7 +410,7 @@ int assembly_client_inst(int *instruction, int instruction_id) {
 
 	*(instruction) = *(instruction) & 0x07ffffff;		// zera a parte que carrega as instrucoes
 
-	printf("instruction_id: %d\n", instruction_id);
+	//printf("instruction_id: %d\n", instruction_id);
 
 	if (instruction_id == ESTABLISH_CONNECTION) {
 		*(instruction) = *(instruction) | 0x08000000; 	// coloca o 1 no início
@@ -460,22 +455,22 @@ int desassembly_server_inst(int word) {
 	// mascara = 0x0000f800
 
 	if ( (word & 0x0000f800) == 0x00000800) {  // se for ESTABLISH_CONNECTION
-		printf("entrou no establish\n");
+		//printf("entrou no establish\n");
 		return desassembly_server_inst_status(word, ESTABLISH_CONNECTION);
 	}
 
 	if ( (word & 0x0000f800) == 0x00003800) {
-		printf("entrou no terminate");
+		//printf("entrou no terminate");
 		return TERMINATE_CLIENT_EXECUTION;
 	}
 
 	if ( (word & 0x0000f800) == 0x00001000) {
-		printf("entrou no upload no desassembly\n");
+		//printf("entrou no upload no desassembly\n");
 		return START_SENDING;
 	}
 
 	if ( (word & 0x0000f800) == 0x00001800) {
-		printf("entrou no download no desassembly\n");
+		//printf("entrou no download no desassembly\n");
 		return START_DOWNLOAD;
 	}
 
@@ -489,7 +484,7 @@ int desassembly_server_inst_status(int word, int inst) {
 
 	// STATUS PARA ESTABLISH_CONNECTION
 	if( inst == ESTABLISH_CONNECTION) {
-		printf("entrou no status");
+		//printf("entrou no status");
 		if ( (word & 0x00000700) == 0x00000100) {
 			return CONNECTED;
 		}
