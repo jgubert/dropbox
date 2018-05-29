@@ -115,18 +115,20 @@ int interface(){
 		// TRATA INSTRUCAO QUE VOLTAR DO SERVIDOR
 
 		if (desassembly_server_inst(my_datagram.instruction) == TERMINATE_CLIENT_EXECUTION){
-			printf("-- CLIENT TERMINANDO --\n");
+			printf("-- CLIENT EXIT --\n");
 			break;
 		}
 
 		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
-			printf(" --CLIENT UPDATE --\n");
+			printf(" --CLIENT UPLOAD --\n");
 			send_file(command); // command equal to the file_path + file_name
+			printf(" --UPLOAD COMPLETED --\n");
 		}
 
 		else if (desassembly_server_inst(my_datagram.instruction) == START_DOWNLOAD){
 			printf("-- CLIENT DOWNLOAD --\n");
 			get_file(command);
+			printf("-- DOWNLOAD COMPLETED --\n");
 		}
 
 	}
@@ -298,7 +300,7 @@ int send_file(char *filename) {
 		// recebe datagrama com ACK
 		rc = recvfrom(socket_id, buffer_ack, 256,0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
 
-		printf("%s\n", buffer_ack);
+		//printf("%s\n", buffer_ack);
 
 	} while (rc < 0 || strcmp(buffer_ack,"ACK_FILEINFO") ); // recebe algo e recebe o ACK do servidor
 
