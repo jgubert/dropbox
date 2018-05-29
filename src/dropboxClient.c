@@ -384,9 +384,16 @@ int get_file(char *filename){
 	struct datagram pkg;
 
 	rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer,(socklen_t *) &peerlen);
-	pkg.id = 2;
-	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+	printf("DEBUG DATAGRAM\nInstruction: %d\nId: %d\nUsername: %s\n",pkg.instruction,pkg.id,pkg.username);
 
+	pkg.id = 2;
+	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
+	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
+	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
+	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
+	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer, peerlen);
+
+	fprintf(stderr, "RC: %d\n", rc);
 	fwrite(pkg.buffer, fileinfo.size, 1, write_file);
 	fclose(write_file);
 
