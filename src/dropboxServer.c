@@ -133,7 +133,7 @@ void* servidor(void* args) {
 	}
 
 	// ELSE, OUTRAS INSTRUCOES
-	printf("Acabou a thread\n");
+	printf("Acabou a thread: %d\n", instruction_id);
 
 }
 
@@ -345,10 +345,11 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 
 	do {
 	// envia o file_info
+		fprintf(stderr, "Entrou no while\n");
 		rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
 	// recebe datagrama com ACK
 		rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
-		printf("%d\n\n", pkg.id);
+		printf("PKG.ID: %d\n\n", pkg.id);
 
 
 	} while (rc < 0 || pkg.id != 2 ); // recebe algo e recebe o ACK do servidor

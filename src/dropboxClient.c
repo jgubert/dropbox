@@ -198,7 +198,7 @@ int login_server(char *host, int port) {
 	// Timeout de 1 segundo
 	struct timeval tv;
 	tv.tv_sec = 1;
-	tv.tv_usec = 200000;
+	tv.tv_usec = 100000;
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
