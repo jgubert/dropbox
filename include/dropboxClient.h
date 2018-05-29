@@ -6,7 +6,7 @@ void sync_client();
 //alterei o send_file pra receber o socket
 //void receive_file(int s, char* user, struct sockaddr_in peer, int peerlen);
 int send_file(char *filename);
-void get_file(char *file);
+int get_file(char *filename);
 void delete_file(char *file);
 void close_session();
 int get_sync_dir();

@@ -16,6 +16,7 @@ void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char* u
 int create_database_structure();
 //void receive_file(int s, create_database_structuret sockaddr* peer, int peerlen);
 void send_file2(int s, char* user, struct sockaddr* peer, int peerlen);
+int send_file(int s, struct sockaddr* peer, int peerlen, char* userid);
 struct package create_package(int s, struct sockaddr * peer, int peerlen);
 int create_database_structure();
 int desassembly_client_inst(int instruction);

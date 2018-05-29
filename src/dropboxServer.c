@@ -111,7 +111,7 @@ void* servidor(void* args) {
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 
-		receive_file("teste.txt",arguments->s,(struct sockaddr*)&arguments->clientAddr, clientLen,arguments->my_datagram.username);
+		receive_file(arguments->my_datagram.file.name,arguments->s,(struct sockaddr*)&arguments->clientAddr, clientLen,arguments->my_datagram.username);
 
 		// receber os dados e salvar no arquivo
 
@@ -119,7 +119,18 @@ void* servidor(void* args) {
 		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
 
+	if (instruction_id == DOWNLOAD){
+		printf("Servidor entrou no if do DOWNLOAD!\n");
 
+		assembly_server_inst(&arguments->my_datagram.instruction, TOO_MANY_USERS);
+		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+
+		send_file(arguments->s,(struct sockaddr*)&arguments->clientAddr, clientLen,arguments->my_datagram.username);
+
+		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
+		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+	}
 
 	// ELSE, OUTRAS INSTRUCOES
 
@@ -284,6 +295,65 @@ void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *u
 }
 
 
+int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
+	FILE * file;
+	int rc;
+	struct file_info fileinfo;
+
+	char dir[100] = "database/sync_dir_";
+	strcat(dir, userid);
+	strcat(dir,"/");
+
+	printf("DEBUG: Entrou na send_files\n");
+
+	rc = recvfrom(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+
+	strcat(dir,fileinfo.name);
+	strcat(dir,fileinfo.extension);
+	file = fopen(dir, "r");
+	if (file == NULL){
+			return ERROR;
+	}
+	fprintf(stderr,"DEBUG: abriu arquivo send_file\n");
+	struct stat st;
+	stat(dir, &st);
+	int length = st.st_size;
+	//fileinfo.size = length;
+	fileinfo.size = 27;
+	printf("Size: %d\n", fileinfo.size);
+
+	rc = sendto(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, peerlen);
+
+	fprintf(stderr,"DEBUG: ACK enviado send_files\n");
+
+
+	struct datagram pkg = {1,1};
+	strcpy(pkg.username, userid);
+
+	while(fread(pkg.buffer,sizeof(char),BUFFER_SIZE,file)) {
+			//Envia o 'pkg.buffer'
+			//Bloqueia até receber o ack
+			//Quando receber o ack, continua no 'while'
+	}
+
+	fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
+
+	do {
+	// envia o file_info
+		rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
+	// recebe datagrama com ACK
+		rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+
+
+	} while (rc < 0 || pkg.id == 2 ); // recebe algo e recebe o ACK do servidor
+
+	fclose(file);
+
+	fprintf(stderr,"DEBUG: Saindo da função send_file\n");
+
+
+}
 
 /*********************************************
 *	FUNÇÕES AUXILIARES DO SERVIDOR

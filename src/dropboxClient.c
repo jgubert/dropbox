@@ -79,7 +79,10 @@ int interface(){
 		}
 
 		else if(strcmp(command, "download") == 0){
+			command = strtok(NULL, "");
 			printf("entrou no download\n");
+			printf("filename = %s\n", command);
+			assembly_client_inst(&my_datagram.instruction, DOWNLOAD);
 		}
 
 		else if(strcmp(command, "list_server") == 0){
@@ -119,6 +122,12 @@ int interface(){
 		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
 			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
 			send_file(command); // command equal to the file_path + file_name
+			break;
+		}
+
+		else if (desassembly_server_inst(my_datagram.instruction) == START_DOWNLOAD){
+			printf("CLIENTE VAI FAZER DOWNLOAD!\n");
+			get_file(command);
 			break;
 		}
 
@@ -431,6 +440,67 @@ int handle_server_connectivity_status(int instruction_id){
 
 	printf("Server instruction nao existe");
 	return ERROR;
+
+}
+
+int get_file(char *filename){
+	FILE * write_file;
+
+	fprintf(stderr,"DEBUG: Entrou na funcao get_file.\n");
+	fprintf(stderr,"filename: %s\n", filename);
+
+	write_file = fopen(filename, "w");
+    if (write_file == NULL){
+        return ERROR;
+  	}
+
+	char *name;
+	char *ext;
+	char filename2[MAX_FILE_NAME_SIZE];
+	bzero(filename2,MAX_FILE_NAME_SIZE);
+
+	strcpy(filename2,filename);
+	ext = strchr(filename2, '.');
+	name = strtok(filename, ".");
+
+	fprintf(stderr,"DEBUG: name = %s\n", name);
+	fprintf(stderr,"DEBUG: ext = %s\n", ext);
+
+	struct file_info fileinfo;
+	strcpy(fileinfo.name, name);
+	strcpy(fileinfo.extension, ext);
+	strcpy(fileinfo.last_modified, "ok");
+	fileinfo.size = 0;
+
+	int rc;
+
+	do {
+		// envia o file_info
+		rc = sendto(socket_id, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr *)&peer, peerlen);
+		// recebe datagrama com ACK
+		rc = recvfrom(socket_id, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr *)&peer,(socklen_t *) &peerlen);
+
+	} while (rc < 0 || fileinfo.size != 0 ); // recebe algo e recebe o ACK do servidor
+
+	fprintf(stderr,"DEBUG: ACK recebido funcao get_file.\n");
+	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+
+
+	struct datagram pkg;
+
+	rc = recvfrom(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *) &peer,(socklen_t *) &peerlen);
+	pkg.id = 2;
+	rc = sendto(socket_id, &pkg, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+
+	fwrite(pkg.buffer, fileinfo.size, 1, write_file);
+	fclose(write_file);
+
+	fprintf(stderr,"Buffer recebido: %s\n", pkg.buffer);
+
+	fprintf(stderr,"DEBUG: Saindo da funcao get_file.\n");
+
+
+	return SUCCESS;
 
 }
 
