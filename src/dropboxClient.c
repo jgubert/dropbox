@@ -59,15 +59,17 @@ int interface(){
 			command = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona)
 
 			char* start_name_pointer;
-			if ((int*)(start_name_pointer = strrchr(command, '/')) == NULL) { // last occurrence of '/'
+			if ( (int*)strrchr(command, '/') == NULL) { // last occurrence of '/'
 				strcpy(file_path, command);
 				strcpy(file_name, command);
 			} 
 
 			else {
+				start_name_pointer = strrchr(command, '/');
 				strncpy(file_path, command, start_name_pointer - command+1);
 				strcpy(file_name, start_name_pointer+1);
 			}
+			printf("command: %s\n", command);
 			printf("Path: %s\n", file_path);
 			printf("File: %s\n", file_name);
 			assembly_client_inst(&my_datagram.instruction, UPLOAD);
@@ -114,7 +116,7 @@ int interface(){
 
 		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
 			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
-			send_file(file_name);
+			send_file(command);
 			break;
 		}
 
