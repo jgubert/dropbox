@@ -33,8 +33,8 @@ int interface(){
 
 	char line[100];
 	char file_path[100];	// usado em upload e download
-	char file_name[100]; 	// usado em download e upload
-	char *command;
+	//char file_name[100]; 	// usado em download e upload
+	char *command = (char*)malloc(sizeof(line));
 
 	while(1) {
 		scanf("%[^\n]", line);
@@ -54,24 +54,27 @@ int interface(){
 		// PREPARA INSTRUCAO
 		if(strcmp(command, "upload") == 0){
 
-			char file_path[100];
-
 			command = strtok(NULL, ""); // coloca o que sobrou de volta em line (bem estranho como strtok() funciona)
 
 			char* start_name_pointer;
 			if ( (int*)strrchr(command, '/') == NULL) { // last occurrence of '/'
 				strcpy(file_path, command);
-				strcpy(file_name, command);
+				strcpy(my_datagram.file.name, command);
 			} 
 
 			else {
 				start_name_pointer = strrchr(command, '/');
 				strncpy(file_path, command, start_name_pointer - command+1);
-				strcpy(file_name, start_name_pointer+1);
+				strcpy(my_datagram.file.name, start_name_pointer+1);
 			}
+			start_name_pointer = strrchr(my_datagram.file.name, '.');
+			strcpy(my_datagram.file.extension, start_name_pointer);
+
 			printf("command: %s\n", command);
 			printf("Path: %s\n", file_path);
-			printf("File: %s\n", file_name);
+			printf("File: %s\n", my_datagram.file.name);
+			printf("Extension: %s\n", my_datagram.file.extension);
+
 			assembly_client_inst(&my_datagram.instruction, UPLOAD);
 		}
 
@@ -113,10 +116,9 @@ int interface(){
 			break;
 		}
 
-
 		else if (desassembly_server_inst(my_datagram.instruction) == START_SENDING){
 			printf("CLIENTE VAI ENVIAR ARQUIVO\n");
-			send_file(command);
+			send_file(command); // command equal to the file_path + file_name
 			break;
 		}
 
