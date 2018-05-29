@@ -375,7 +375,7 @@ int get_file(char *filename){
 		// recebe datagrama com ACK
 		rc = recvfrom(socket_id, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr *)&peer,(socklen_t *) &peerlen);
 
-	} while (rc < 0 || fileinfo.size != 0 ); // recebe algo e recebe o ACK do servidor
+	} while (rc < 0 || fileinfo.size == 0 ); // recebe algo e recebe o ACK do servidor
 
 	fprintf(stderr,"DEBUG: ACK recebido funcao get_file.\n");
 	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
