@@ -349,11 +349,12 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 		fprintf(stderr, "Entrou no while\n");
 		rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
 	// recebe datagrama com ACK
-		rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
+		//rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
 		printf("PKG.ID: %d\n\n", pkg.id);
 
 
-	} while (rc < 0 || pkg.id != 2 ); // recebe algo e recebe o ACK do servidor
+	}while (rc < 0); //while (rc < 0 || pkg.id != 2 ); // recebe algo e recebe o ACK do servidor
+
 
 	fclose(file);
 
