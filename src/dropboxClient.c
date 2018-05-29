@@ -243,9 +243,9 @@ int create_sync_dir() {
 	strcat(dir_name,user_name);
 
 	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
-		//printf("Pasta %s criada.\n", dir_name);
+		printf("Pasta %s criada.\n", dir_name);
 	else{
-		//printf("Pasta %s já existe.\n", dir_name);
+		printf("Pasta %s já existe.\n", dir_name);
 		return ERROR;
 	}
 	return SUCCESS;
