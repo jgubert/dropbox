@@ -134,6 +134,7 @@ void* servidor(void* args) {
 
 	// ELSE, OUTRAS INSTRUCOES
 	printf("Acabou a thread: %d\n", instruction_id);
+	pthread_exit(NULL);
 
 }
 
