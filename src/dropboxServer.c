@@ -35,7 +35,7 @@ void* servidor(void* args) {
 	//printf("DEBUG instrucao recebido em hex: %x\n", arguments->my_datagram.instruction);
 
 	instruction_id = desassembly_client_inst(arguments->my_datagram.instruction);
-	printf("Instruction id: %d\n", instruction_id);
+	//printf("Instruction id: %d\n", instruction_id);
 
 	if (instruction_id == ESTABLISH_CONNECTION) {
 
@@ -104,7 +104,7 @@ void* servidor(void* args) {
 	}
 
 	if (instruction_id == UPLOAD) {
-		printf("Servidor entrou no if do UPLOAD!\n");
+		//printf("Servidor entrou no if do UPLOAD!\n");
 
 		// FILE_RECEIVED é temporario.. primeiro envia o ACK para começar o envio do arquivo.
 		assembly_server_inst(&arguments->my_datagram.instruction, START_SENDING);
@@ -120,7 +120,7 @@ void* servidor(void* args) {
 	}
 
 	if (instruction_id == DOWNLOAD){
-		printf("Servidor entrou no if do DOWNLOAD!\n");
+		//printf("Servidor entrou no if do DOWNLOAD!\n");
 
 		assembly_server_inst(&arguments->my_datagram.instruction, START_DOWNLOAD);
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
@@ -133,7 +133,7 @@ void* servidor(void* args) {
 	}
 
 	// ELSE, OUTRAS INSTRUCOES
-	printf("Acabou a thread: %d\n", instruction_id);
+	//printf("Acabou a thread: %d\n", instruction_id);
 	pthread_exit(NULL);
 
 }
@@ -267,21 +267,21 @@ void receive_file(char *file, int s, struct sockaddr* peer, int peerlen, char *u
 	strcat(dir, userid);
 	strcat(dir,"/");
 
-	printf("DEBUG: Entrou na receive_files\n");
+	//printf("DEBUG: Entrou na receive_files\n");
 
 	rc = recvfrom(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
-	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+	//printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
 	strcpy(buffer_ack, "ACK_FILEINFO");
-	fprintf(stderr,"buffer_ack: %s\n",buffer_ack);
+	//fprintf(stderr,"buffer_ack: %s\n",buffer_ack);
 	rc = sendto(s, buffer_ack, 15, 0, (struct sockaddr*) peer, peerlen);
 
-	fprintf(stderr,"DEBUG: ACK enviado receive_files\n");
+	//fprintf(stderr,"DEBUG: ACK enviado receive_files\n");
 
 	strcat(dir,fileinfo.name);
 	//strcat(dir,".");
 	strcat(dir,fileinfo.extension);
 
-	fprintf(stderr,"DEBUG: %s\n", dir);
+	//fprintf(stderr,"DEBUG: %s\n", dir);
 
 	FILE * write_file;
     write_file = fopen (dir, "w");
@@ -307,10 +307,10 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 	strcat(dir, userid);
 	strcat(dir,"/");
 
-	printf("DEBUG: Entrou na send_files\n");
+	//printf("DEBUG: Entrou na send_files\n");
 
 	rc = recvfrom(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
-	printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
+	//printf("DEBUG FILE_INFO\nName: %s\nExt: %s\nLast Modified: %s\nSize: %d\n",fileinfo.name,fileinfo.extension,fileinfo.last_modified,fileinfo.size);
 
 	strcat(dir,fileinfo.name);
 	strcat(dir,fileinfo.extension);
@@ -318,7 +318,7 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 	if (file == NULL){
 			return ERROR;
 	}
-	fprintf(stderr,"DEBUG: abriu arquivo send_file\n");
+	//fprintf(stderr,"DEBUG: abriu arquivo send_file\n");
 
 	struct stat st;
 	stat(dir, &st);
@@ -326,11 +326,11 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 	//fileinfo.size = length;
 	fileinfo.size = length;
 
-	printf("Size: %d\n", length);
+	//printf("Size: %d\n", length);
 
 	rc = sendto(s, &fileinfo, sizeof(struct file_info), 0, (struct sockaddr*) peer, peerlen);
 
-	fprintf(stderr,"DEBUG: ACK enviado send_files\n");
+	//fprintf(stderr,"DEBUG: ACK enviado send_files\n");
 
 
 	struct datagram pkg = {1,1};
@@ -342,15 +342,15 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 			//Quando receber o ack, continua no 'while'
 	}
 
-	fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
+	//fprintf(stderr,"BUFFER ARQUIVO: %s\n",pkg.buffer);
 
 	do {
 	// envia o file_info
-		fprintf(stderr, "Entrou no while\n");
+		//fprintf(stderr, "Entrou no while\n");
 		rc = sendto(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, peerlen);
 	// recebe datagrama com ACK
 		//rc = recvfrom(s, &pkg, sizeof(struct datagram), 0, (struct sockaddr*) peer, (socklen_t *) &peerlen);
-		printf("PKG.ID: %d\n\n", pkg.id);
+		//printf("PKG.ID: %d\n\n", pkg.id);
 
 
 	}while (rc < 0); //while (rc < 0 || pkg.id != 2 ); // recebe algo e recebe o ACK do servidor
@@ -410,7 +410,6 @@ int desassembly_client_inst(int word) {
 	}
 
 	if ( (instruction & 0xf8000000) == 0x38000000 ) {
-		printf("desassembly_client_inst, ENTROU NO EXIT");
 		return EXIT;
 	}
 
@@ -477,9 +476,7 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		*(instruction) = *(instruction) | 0x00001800; // add instrucao + status
 		return SUCCESS;
 	}
-
-
-	printf("Erro ao determinar assembly_server_inst()\n");
+	
 	return ERROR;
 }
 
