@@ -461,6 +461,14 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		return SUCCESS;
 	}
 
+	// DOWNLOAD
+	if (instruction_id == START_DOWNLOAD) {
+		*(instruction) = *(instruction) & 0xffff0000; // zera os LSBs
+		*(instruction) = *(instruction) | 0x00001800; // add instrucao + status
+		return SUCCESS;
+	}
+
+
 	printf("Erro ao determinar assembly_server_inst()\n");
 	return ERROR;
 }

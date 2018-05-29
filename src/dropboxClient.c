@@ -467,6 +467,11 @@ int desassembly_server_inst(int word) {
 		return START_SENDING;
 	}
 
+	if ( (word & 0x0000f800) == 0x00001800) {
+		printf("entrou no download no desassembly\n");
+		return START_DOWNLOAD;
+	}
+
 	return ERROR;
 }
 
