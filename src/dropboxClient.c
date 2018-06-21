@@ -21,10 +21,13 @@
 #define NOT_OPEN 0
 #define OPEN 1
 #define MAX_PACKET 1250
+#define SUCCESS 1
+#define PRIMARY_DEAD 20
 
 #define	SOCKET	int
 #define INVALID_SOCKET  ((SOCKET)~0)
 
+void changeSocket();
 
 char user_name[USER_NAME_MAX_LENGTH];
 int user_socket_id, FE_socket;
@@ -293,10 +296,15 @@ void frontEnd(void *args)
 			if(envio == recebimento)
 			{
 				//o servidor esta respondendo ao chamado do frontend
+				//nao faz nada
 			}
 			else
 			{
 				//o servidor nao respondeu portanto nao existe mais -> chamar o backup para primario
+				//fechar socket do cliente
+				//receber novo ip e nova porta
+				//criar novo socket de cliente nesse ip e porta
+				changeSocket();
 			}
 
 	  }
@@ -304,6 +312,15 @@ void frontEnd(void *args)
 
 	pthread_exit(NULL);
 	close(s);
+}
+
+void changeSocket()
+{
+	//fechar socket do cliente
+	//receber novo ip e nova porta
+	//criar novo socket de cliente nesse ip e porta
+
+
 }
 
 

@@ -67,6 +67,14 @@ struct arg_struct {
   struct sockaddr_in clientAddr;
 };
 
+struct arg_portas {
+
+  int portaCli;
+  int portaServ;
+  char* IPServ;
+
+};
+
 typedef struct server_list{
 	int type;	// 1 - primario 2 - backup
 	char ip[16];		//endereço ip do servidor

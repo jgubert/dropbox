@@ -15,11 +15,3 @@ int desassembly_server_inst(int word);
 int desassembly_server_inst_status(int word, int inst);
 int interface();
 int create_sync_dir();
-
-struct arg_portas {
-
-  int portaCli;
-  int portaServ;
-  char* IPServ;
-
-};
