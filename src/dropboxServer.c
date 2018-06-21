@@ -23,6 +23,7 @@ char buffer[BUFFER_SIZE];
 
 int create_database_structure();
 void create_path(char *user);
+int setup_server_TCP(int port);
 
 void* backup1(void* args){
 
@@ -139,6 +140,7 @@ void* servidor(void* args) {
 	}
 
 	if (instruction_id == BACKUP1){
+		fprintf(stderr, "> ENTROU NO IF DO BACKUP1\n");
 		pthread_t backup1_thread;
 		if ( pthread_create(&backup1_thread, NULL, backup1, NULL) != 0 ) {
 			printf("Erro na criação da thread\n");
@@ -161,35 +163,43 @@ void* servidor(void* args) {
 int main(int argc, char *argv[]) {
 
   	struct  sockaddr_in peer;
-	SOCKET  s;
+	SOCKET  s, s_TCP;
 	int port;
 	int peerlen, n;
 	int type;
 	char * host;
-
-	fprintf(stderr, "> DEBUG 1\n");
-
+	fprintf(stderr, "> debug 1\n");
 	//Pega paramentro
 	if(argc < 3) {
 		printf("Utilizar:\n");
 		printf("dropBoxServer <port> <1 - primario   2 - backup><ip host>\n");
 		exit(1);
 	}
-		fprintf(stderr, "> DEBUG 2\n");
+	fprintf(stderr, "> debug 2\n");
+
 	port = atoi(argv[1]);  // Porta
 	type = atoi(argv[2]);	 // Type
-	fprintf(stderr, "> DEBUG 3\n");
 	if(argc == 4){
 		host = malloc(strlen(argv[3]));
 		strcpy(host, argv[2]); //ip host
 	}
+	fprintf(stderr, "> debug 3\n");
 
-	fprintf(stderr, "> DEBUG 4\n");
+
 // eh primario, espera conexao dos secundarios e manda replica dos adicionados
 // quando altera dado envia para as replicas um request
 	if (type == 1){
 		#define Replica1Port 50000
 		#define Replica2Port 50001
+
+		// prepara servidor e carrega informacoes (persistencia)
+		if ( init_server() == ERROR){
+			printf("Erro ao preparar o servidor informacoes do servidor\n");
+		}
+
+		s = setup_server(port);
+		s_TCP = setup_server_TCP(port);
+
 	} else if(type == 2) {
 		int port_tcp = 50000;
 	// eh secundario, pede copia do primario
@@ -200,12 +210,6 @@ int main(int argc, char *argv[]) {
 			int port_tcp = 50001;
 		}
 
-	// prepara servidor e carrega informacoes (persistencia)
-	if ( init_server() == ERROR){
-		printf("Erro ao preparar o servidor informacoes do servidor\n");
-	}
-
-	s = setup_server(port);
     // recebe datagrama
     struct datagram received_datagram;
     int rc;
@@ -235,6 +239,8 @@ int main(int argc, char *argv[]) {
 			peerlen2 = sizeof(peer2);
 
 			int rc2 = sendto(s2, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr*) &peer2, peerlen2);
+
+			fprintf(stderr, "> debug 5\n");
 
 			sleep(100);
 
@@ -297,6 +303,40 @@ int setup_server(int port) {
 
     printf("Socket inicializado. Aguardando mensagens...\n\n");
     return s;
+}
+
+int setup_server_TCP(int port) {
+
+	struct  sockaddr_in peer_TCP;
+
+	SOCKET s_TCP;
+
+	int peerlen_TCP, n;
+
+	if ((s_TCP = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		printf("Falha na criacao do socket tcp\n");
+	    exit(1);
+ 	}
+
+	// Seta pro socket tcp
+	memset((void *) &peer_TCP,0,sizeof(struct sockaddr_in));
+	peer_TCP.sin_family = AF_INET;
+	peer_TCP.sin_addr.s_addr = htonl(INADDR_ANY); // Recebe de qualquer IP
+	peer_TCP.sin_port = htons(port); // Recebe na porta especificada na linha de comando
+	peerlen_TCP = sizeof(peer_TCP);
+
+	// Associa socket tcp com estrutura peer
+	if(bind(s_TCP,(struct sockaddr *) &peer_TCP, peerlen_TCP)) {
+			printf("Erro no bind tcp\n");
+			exit(1);
+	}
+
+	if((listen(s_TCP, 8)) != 0){
+		printf("Erro no listen\n");
+	}
+
+    printf("Socket TCP inicializado. Aguardando mensagens...\n\n");
+    return s_TCP;
 }
 
 int init_server() {
