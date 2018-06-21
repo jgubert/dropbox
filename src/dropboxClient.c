@@ -11,14 +11,21 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <time.h>
+
 
 #define MAX_COMMAND_SIZE 15
 #define	MAX_FILE_NAME_SIZE 25
 #define USER_NAME_SIZE 25
+#define NOT_OPEN 0
+#define OPEN 1
+
+#define	SOCKET	int
+#define INVALID_SOCKET  ((SOCKET)~0)
 
 
 char user_name[USER_NAME_MAX_LENGTH];
-int user_socket_id;
+int user_socket_id, FE_socket;
 struct sockaddr_in peer;
 SOCKET socket_id;
 int peerlen, rc;
@@ -193,6 +200,79 @@ int main(int argc, char *argv[] ){
 
 }
 
+int frontEnd(int *portaCli, int *portaServ, char *IPServ[16])
+{
+	SOCKET s;
+	struct sockaddr_in  s_cli, s_serv;
+	int connection = 0;
+
+	while(connection == NOT_OPEN)
+	{
+		bzero((char *) &s_cli, sizeof(s_cli));
+		// abre socket TCP
+			if ((s = socket(AF_INET, SOCK_STREAM, 0))== INVALID_SOCKET)
+			{
+				printf("Erro iniciando socket\n");
+				exit(1);
+			}
+
+			// seta informacoes IP/Porta locais
+			s_cli.sin_family = AF_INET;
+			s_cli.sin_addr.s_addr = htonl(INADDR_ANY);
+			s_cli.sin_port = htons(*portaCli); //porta cliente
+
+			// associa configuracoes locais com socket
+		  if ((bind(s, (struct sockaddr *)&s_cli, sizeof(s_cli))) != 0)
+		  {
+		    printf("erro no bind\n");
+		    close(s);
+		    exit(1);
+		  }
+
+		  // seta informacoes IP/Porta do servidor remoto
+		  s_serv.sin_family = AF_INET;
+		  s_serv.sin_addr.s_addr = inet_addr(*IPServ);
+		  s_serv.sin_port = htons(*portaServ);
+
+
+			// connecta socket aberto no cliente com o servidor
+		  if(connect(s, (struct sockaddr*)&s_serv, sizeof(s_serv)) != 0)
+		  {
+		    //printf("erro na conexao - %d\n", WSAGetLastError());
+		    printf("erro na conexao");
+		    close(s);
+		    exit(1);
+		  }
+			else
+			{
+				connection = OPEN;
+			}
+	}
+
+
+
+
+
+
+	  char str[1250] = "cade minha lista de servidores?\n";
+	  while(1)
+	  {
+
+	    if ((send(s, (const char *)&str, sizeof(str),0)) < 0)
+	    {
+	      printf("erro na transmiss„o\n");
+	      close(s);
+	      return 0;
+	    }
+	  }
+
+
+
+
+
+
+	return s;
+}
 
 
 int login_server(char *host, int port) {
@@ -201,6 +281,17 @@ int login_server(char *host, int port) {
 	struct timeval tv;
 	tv.tv_sec = 1;
 	tv.tv_usec = 100000;
+
+
+
+
+	//cade a porta do cliente frontEnd TCP e do servidor frontEndTCP e o IP do servidor?
+	//FE_socket = frontEnd(&portaCli, &portaServ, &IPServ)
+
+
+
+
+
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
