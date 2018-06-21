@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <time.h>
+#include <pthread.h>
 
 
 #define MAX_COMMAND_SIZE 15
@@ -19,6 +20,7 @@
 #define USER_NAME_SIZE 25
 #define NOT_OPEN 0
 #define OPEN 1
+#define MAX_PACKET 1250
 
 #define	SOCKET	int
 #define INVALID_SOCKET  ((SOCKET)~0)
@@ -200,15 +202,18 @@ int main(int argc, char *argv[] ){
 
 }
 
-int frontEnd(int *portaCli, int *portaServ, char *IPServ[16])
+void frontEnd(void *args)
 {
-	SOCKET s;
-	struct sockaddr_in  s_cli, s_serv;
+	struct arg_portas *arguments = (struct arg_portas *)args;
+
+	SOCKET s = 0, s_cli, s_serv;
+	int n;
+	struct sockaddr_in  addr_serv, addr_cli;
 	int connection = 0;
 
 	while(connection == NOT_OPEN)
 	{
-		bzero((char *) &s_cli, sizeof(s_cli));
+		bzero((char *) &addr_cli, sizeof(addr_cli));
 		// abre socket TCP
 			if ((s = socket(AF_INET, SOCK_STREAM, 0))== INVALID_SOCKET)
 			{
@@ -217,12 +222,12 @@ int frontEnd(int *portaCli, int *portaServ, char *IPServ[16])
 			}
 
 			// seta informacoes IP/Porta locais
-			s_cli.sin_family = AF_INET;
-			s_cli.sin_addr.s_addr = htonl(INADDR_ANY);
-			s_cli.sin_port = htons(*portaCli); //porta cliente
+			addr_cli.sin_family = AF_INET;
+			addr_cli.sin_addr.s_addr = htonl(INADDR_ANY);
+			addr_cli.sin_port = htons(arguments->portaCli); //porta cliente
 
 			// associa configuracoes locais com socket
-		  if ((bind(s, (struct sockaddr *)&s_cli, sizeof(s_cli))) != 0)
+		  if ((bind(s, (struct sockaddr *)&addr_cli, sizeof(addr_cli))) != 0)
 		  {
 		    printf("erro no bind\n");
 		    close(s);
@@ -230,13 +235,13 @@ int frontEnd(int *portaCli, int *portaServ, char *IPServ[16])
 		  }
 
 		  // seta informacoes IP/Porta do servidor remoto
-		  s_serv.sin_family = AF_INET;
-		  s_serv.sin_addr.s_addr = inet_addr(*IPServ);
-		  s_serv.sin_port = htons(*portaServ);
+		  addr_serv.sin_family = AF_INET;
+		  addr_serv.sin_addr.s_addr = inet_addr(&arguments->IPServ);
+		  addr_serv.sin_port = htons(arguments->portaServ);
 
 
 			// connecta socket aberto no cliente com o servidor
-		  if(connect(s, (struct sockaddr*)&s_serv, sizeof(s_serv)) != 0)
+		  if(connect(s, (struct sockaddr*)&addr_serv, sizeof(addr_serv)) != 0)
 		  {
 		    //printf("erro na conexao - %d\n", WSAGetLastError());
 		    printf("erro na conexao");
@@ -250,28 +255,55 @@ int frontEnd(int *portaCli, int *portaServ, char *IPServ[16])
 	}
 
 
-
-
-
-
-	  char str[1250] = "cade minha lista de servidores?\n";
+		char recvbuf[MAX_PACKET];
+		int envio = 0;
+		int recebimento = 0;
 	  while(1)
 	  {
 
-	    if ((send(s, (const char *)&str, sizeof(str),0)) < 0)
-	    {
-	      printf("erro na transmiss„o\n");
-	      close(s);
-	      return 0;
-	    }
+
+			/* write in the socket */
+			n = write(s, "cade minha lista de servidores?", 31);
+				if (n < 0)
+				{
+					printf("ERROR writing to socket\n");
+				}
+				else
+				{
+					envio++;
+				}
+
+				bzero(recvbuf,MAX_PACKET);
+
+			/* read from the socket */
+				n = read(s, recvbuf, MAX_PACKET);
+				if (n < 0)
+				{
+					printf("ERROR reading from socket\n");
+				}
+				else
+				{
+					recebimento++;
+					sleep(4);
+				}
+
+				printf("%s\n",recvbuf);
+
+
+			if(envio == recebimento)
+			{
+				//o servidor esta respondendo ao chamado do frontend
+			}
+			else
+			{
+				//o servidor nao respondeu portanto nao existe mais -> chamar o backup para primario
+			}
+
 	  }
 
 
-
-
-
-
-	return s;
+	pthread_exit(NULL);
+	close(s);
 }
 
 
@@ -282,14 +314,19 @@ int login_server(char *host, int port) {
 	tv.tv_sec = 1;
 	tv.tv_usec = 100000;
 
+	struct arg_portas *args = NULL;
+
+	args = (struct arg_portas*)malloc(sizeof *args);
+	args->portaCli = 5005 + (rand() % 1900);
+	args->portaServ = port;
+	args->IPServ = &host;
 
 
+	pthread_t thread;
 
-	//cade a porta do cliente frontEnd TCP e do servidor frontEndTCP e o IP do servidor?
-	//FE_socket = frontEnd(&portaCli, &portaServ, &IPServ)
-
-
-
+	if ( pthread_create(&thread, NULL, frontEnd, args) != 0 ) {
+		printf("Erro na criação da thread\n");
+	}
 
 
 
