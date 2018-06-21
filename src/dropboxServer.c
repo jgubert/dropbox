@@ -24,7 +24,13 @@ char buffer[BUFFER_SIZE];
 int create_database_structure();
 void create_path(char *user);
 
+void* backup1(void* args){
 
+}
+
+void* backup2(void* args){
+
+}
 
 void* servidor(void* args) {
 
@@ -132,6 +138,20 @@ void* servidor(void* args) {
 		//sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 	}
 
+	if (instruction_id == BACKUP1){
+		pthread_t backup1_thread;
+		if ( pthread_create(&backup1_thread, NULL, backup1, NULL) != 0 ) {
+			printf("Erro na criação da thread\n");
+		}
+	}
+
+	if (instruction_id == BACKUP2){
+		pthread_t backup2_thread;
+		if ( pthread_create(&backup2_thread, NULL, backup2, NULL) != 0 ) {
+			printf("Erro na criação da thread\n");
+		}
+	}
+
 	// ELSE, OUTRAS INSTRUCOES
 	//printf("Acabou a thread: %d\n", instruction_id);
 	pthread_exit(NULL);
@@ -145,15 +165,40 @@ int main(int argc, char *argv[]) {
 	int port;
 	int peerlen, n;
 	int type;
+	char * host;
+
+	fprintf(stderr, "> DEBUG 1\n");
 
 	//Pega paramentro
 	if(argc < 3) {
 		printf("Utilizar:\n");
-		printf("dropBoxServer <port> <1 - primario   2 - backup>\n");
+		printf("dropBoxServer <port> <1 - primario   2 - backup><ip host>\n");
 		exit(1);
 	}
+		fprintf(stderr, "> DEBUG 2\n");
 	port = atoi(argv[1]);  // Porta
-	type = atoi(argv[2]);
+	type = atoi(argv[2]);	 // Type
+	fprintf(stderr, "> DEBUG 3\n");
+	if(argc == 4){
+		host = malloc(strlen(argv[3]));
+		strcpy(host, argv[2]); //ip host
+	}
+
+	fprintf(stderr, "> DEBUG 4\n");
+// eh primario, espera conexao dos secundarios e manda replica dos adicionados
+// quando altera dado envia para as replicas um request
+	if (type == 1){
+		#define Replica1Port 50000
+		#define Replica2Port 50001
+	} else if(type == 2) {
+		int port_tcp = 50000;
+	// eh secundario, pede copia do primario
+	//fica recebendo request a cada mudanca com a lista de servidores e clientes
+
+	}
+		else{
+			int port_tcp = 50001;
+		}
 
 	// prepara servidor e carrega informacoes (persistencia)
 	if ( init_server() == ERROR){
@@ -170,6 +215,32 @@ int main(int argc, char *argv[]) {
    	struct  sockaddr_in clientAddr;
     unsigned int clientLen;
     clientLen = sizeof(clientAddr);
+
+		if (type == 2){
+			struct  sockaddr_in peer2;
+			SOCKET s2;
+			int peerlen2;
+
+			struct datagram my_datagram;
+
+			my_datagram.instruction = 0x40000000;
+
+			if((s2 = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
+				printf("Falha na criacao do socket\n");
+				return ERROR;
+		 	}
+			peer2.sin_family = AF_INET;
+			peer2.sin_port = htons(port);
+			peer2.sin_addr.s_addr = inet_addr(host);
+			peerlen2 = sizeof(peer2);
+
+			int rc2 = sendto(s2, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr*) &peer2, peerlen2);
+
+			sleep(100);
+
+		}
+
+
 
     while(1) {
 
@@ -417,6 +488,14 @@ int desassembly_client_inst(int word) {
 
 	if ( (instruction & 0xf8000000) == 0x38000000 ) {
 		return EXIT;
+	}
+
+	if ( (instruction & 0xf8000000) == 0x40000000 ) {
+		return BACKUP1;
+	}
+
+	if ( (instruction & 0xf8000000) == 0x48000000 ) {
+		return BACKUP2;
 	}
 
 	return ERROR;

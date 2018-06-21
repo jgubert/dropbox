@@ -29,6 +29,8 @@
 #define LIST_CLIENT 3
 #define GET_SYNC_DIR 4
 #define EXIT 5
+#define BACKUP1 6
+#define BACKUP2 7
 
 // custom instructions id
 #define CLEAR_INSTRUCTION_BYTE 20
