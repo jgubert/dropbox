@@ -7,7 +7,7 @@ util: include/dropboxUtil.h src/dropboxUtil.c
 client: include/dropboxClient.h include/dropboxClient.h src/dropboxClient.c
 	gcc -o bin/dropboxClient src/dropboxClient.c bin/dropboxUtil.o
 
-server: include/dropboxClient.h include/dropboxServer.h src/dropboxServer.c 
+server: include/dropboxClient.h include/dropboxServer.h src/dropboxServer.c
 	gcc -o bin/dropboxServer src/dropboxServer.c -lpthread
 
 debug:

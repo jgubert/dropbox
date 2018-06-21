@@ -144,14 +144,16 @@ int main(int argc, char *argv[]) {
 	SOCKET  s;
 	int port;
 	int peerlen, n;
+	int type;
 
 	//Pega paramentro
-	if(argc < 2) {
+	if(argc < 3) {
 		printf("Utilizar:\n");
-		printf("dropBoxServer <port>");
+		printf("dropBoxServer <port> <1 - primario   2 - backup>\n");
 		exit(1);
 	}
 	port = atoi(argv[1]);  // Porta
+	type = atoi(argv[2]);
 
 	// prepara servidor e carrega informacoes (persistencia)
 	if ( init_server() == ERROR){
@@ -189,6 +191,10 @@ int main(int argc, char *argv[]) {
 		if ( pthread_create(&thread, NULL, servidor, args) != 0 ) {
 			printf("Erro na criação da thread\n");
 		}
+		if (type == 2){
+			//espera um pacote com os arquivos do primario
+			//se for type 1, a cada operacao, manda o pacote para os type 2 também
+			}
     }
 }
 
@@ -476,7 +482,7 @@ int assembly_server_inst(int *instruction, int instruction_id) {
 		*(instruction) = *(instruction) | 0x00001800; // add instrucao + status
 		return SUCCESS;
 	}
-	
+
 	return ERROR;
 }
 
