@@ -243,18 +243,18 @@ void frontEnd(void *args)
 		  addr_serv.sin_port = htons(arguments->portaServ);
 
 
-			// connecta socket aberto no cliente com o servidor
-		  if(connect(s, (struct sockaddr*)&addr_serv, sizeof(addr_serv)) != 0)
-		  {
-		    //printf("erro na conexao - %d\n", WSAGetLastError());
-		    printf("erro na conexao");
-		    close(s);
-		    exit(1);
-		  }
-			else
-			{
-				connection = OPEN;
-			}
+		// connecta socket aberto no cliente com o servidor
+		if(connect(s, (struct sockaddr*)&addr_serv, sizeof(addr_serv)) != 0)
+		{
+			//printf("erro na conexao - %d\n", WSAGetLastError());
+			printf("erro na conexao");
+			close(s);
+			exit(1);
+		}
+		else
+		{
+			connection = OPEN;
+		}
 	}
 
 

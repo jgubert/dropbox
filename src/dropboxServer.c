@@ -13,17 +13,54 @@
 #include <pthread.h>
 
 #define GET_SYNC_DIR 4
+#define Replica1Port 50000
+#define Replica2Port 50001
+
+#define TypeServer		1
+#define TypeBackup		2
+
+#define BackupServerNewFileMessage		0
+#define BackupServerClientFileUpdate	1
+
+#define PrimaryServerNewFileMessage		0
+#define PrimaryServerServerList			1
+
+#define MaxUDPDatagramSize				1024
+
+#define MaximumBackupServers			100
+
+#define FileFolder	"Database"
 
 // variaveis globais de controle do servidor
 struct client clients[10];
 int semaforo = 0;
 char buffer[BUFFER_SIZE];
 
+// Os dados de entrada do programa (input port and ip host)
+int s_InputPort;
+char s_InputHost[100];
+int s_ClientConnectPort;
+
+// Todas as conexoes de servidores de backup (sockets)
+int s_BackupSockets[MaximumBackupServers];
+int s_BackupSocketsInUse = 0;
+
+// Essa é o socket de conexao com o servidor principal, utilizado pelos backups
+int s_PrimaryServerSocket = -1;
+
 // --- FUNÇÕES AUXILIARES ---
 
 int create_database_structure();
 void create_path(char *user);
-int setup_server_TCP(int port);
+// int setup_backup_tpc_server(int port);
+int init_primary_server_client_list();
+int create_folder(char* _name);
+int setup_primary_server(int port);
+int config_backup_server(SOCKET serverSocket);
+void* listen_client_messages(void* args);
+void* listen_server_messages(void* args);
+void* listen_backup_tcp_requests(void* args);
+int setup_client_listen_server(int port);
 
 void* backup1(void* args){
 
@@ -67,7 +104,7 @@ void* listenFE(void* args){
 		clilen = sizeof(struct sockaddr_in);
 	if ((newsockfd = accept(sockfd, (struct sockaddr *) &addr_cli, &clilen)) == -1)
 		printf("ERROR on accept");
-
+	
 	bzero(buffer, 256);
 
 	/* read from the socket */
@@ -214,152 +251,495 @@ void* servidor(void* args) {
 
 }
 
+void aux_tcp_read(SOCKET socket, unsigned int size, void* buffer)
+{
+	int bytesRead = 0;
+	int result;
+	
+	while(bytesRead < size)
+	{
+		result = read(socket, buffer + bytesRead, size - bytesRead);
+		{
+			if(result < 1)
+			{
+				// Error
+				// ...
+			}
+		}
+
+		bytesRead += result;
+	}
+}
+
+int aux_tcp_write(SOCKET socket, unsigned size, void* data)
+{
+	int	n = write(socket,data, size);
+	if (n < 0)
+	{
+		printf("ERROR writing to socket");
+	}
+
+	return n;
+}
+
+// Le o tamanho da mensagem e logo em seguida a mensagem propriamente dita, 
+// retornando o tamanho dela e atuaizando/alocando os dados no buffer (parametro)
+int tcp_read(SOCKET socket, int* messageType, void** buffer)
+{
+	int length = 0;
+	
+	// Read the message size
+	aux_tcp_read(socket, sizeof(length), (void*)&length);
+
+	// Read the message type
+	aux_tcp_read(socket, sizeof(messageType), (void*)messageType);
+
+	// Allocate the data
+	*buffer = malloc(length);
+
+	// Read the message size
+	aux_tcp_read(socket, length, *buffer);
+
+	return length;
+}
+
+// Envia o tamanho da mensagem e logo em seguida a mensagem propriamente dita
+void tcp_write(SOCKET socket, int messageType, unsigned size, void* data)
+{
+	int length = size;
+
+	// Write the message length
+	aux_tcp_write(socket, sizeof(length), (void*)&length);
+
+	// Write the message type
+	aux_tcp_write(socket, sizeof(messageType), (void*)&messageType);
+
+	// Write the message itself
+	aux_tcp_write(socket, size, data);
+}
+
+int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, void** buffer)
+{
+	// Cria um buffer temporario geral e outro local
+	*buffer = malloc(MaxUDPDatagramSize);
+	char* localBuffer = (char*)malloc(MaxUDPDatagramSize + sizeof(int));
+
+	// Estrutura de info do cliente que receberemos a mensagem
+	unsigned int clientLen = sizeof(&clientAddr);
+
+	// NAO USADO ... Ajusta um tempo de timeout
+	// int timeout = 1000;
+	// setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+	
+	// Recebe uma nova mensagem
+	int rc = recvfrom(socket, localBuffer, sizeof(struct datagram), 0, (struct sockaddr *) clientAddr,(socklen_t *)&clientLen);
+	if (rc < 0) 
+	{
+		printf("Erro ao receber datagrama\n");
+		return ERROR;
+	}
+
+	// Ajusta o tipo de mensagem
+	*messageType = *(int*)localBuffer;
+
+	// Copia os dados
+	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
+
+	// Deleta o buffer local
+	free(localBuffer);
+
+	return rc - sizeof(int);
+}
+
+// TODO: Mudar o frontend para usar essa funcao
+int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageType, void* datagram)
+{
+	struct  sockaddr_in peer;
+	int peerlen;
+
+	// Cria um buffer temporario que ira ter o tipo de mensagem e a mensagem propriamente dita
+	char* buffer = malloc(MaxUDPDatagramSize + sizeof(int));
+	
+	// Copia o tipo de mensagem
+	memcpy(buffer, &messageType, sizeof(int));
+
+	// Copia os dados da mensagem
+	memcpy(&buffer[sizeof(int)], datagram, size);
+
+	peer.sin_family = AF_INET;
+	peer.sin_port = htons(port);
+	peer.sin_addr.s_addr = inet_addr(host);
+	peerlen = sizeof(peer);
+
+	int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
+
+	// Limpa o buffer temporario
+	free(buffer);
+
+	return rc;
+}
+
 int main(int argc, char *argv[]) {
 
   	struct  sockaddr_in peer;
-	SOCKET  s, s_TCP;
 	int port;
 	int peerlen, n;
 	int type;
-	char * host;
-	fprintf(stderr, "> debug 1\n");
+	char* host;
+
+	// Socket usado pelo servidor pricipal para receber mensagens de clientes
+	SOCKET  serverListenSocket;
+
+	// Socket usado na comunicacao do backup com o servidor, contem a comunicacao tcp com o server
+	// primario
+	SOCKET serverSocket;
+
+	///////////////////
+	// INICIALIZACAO //
+	///////////////////
+
 	//Pega paramentro
 	if(argc < 3) {
 		printf("Utilizar:\n");
-		printf("dropBoxServer <port> <1 - primario   2 - backup><ip host>\n");
+		printf("dropBoxServer <1 - primario> 	<client connect port> <backup tcp listen port>\n");
+		printf("ou:\n");
+		printf("dropBoxServer <2 - backup> 		<client connect port> <backup tcp connect port> <primary server ip host>\n");
 		exit(1);
 	}
-	fprintf(stderr, "> debug 2\n");
 
-	port = atoi(argv[1]);  // Porta
-	type = atoi(argv[2]);	 // Type
-	if(argc == 4){
-		host = malloc(strlen(argv[3]));
-		strcpy(host, argv[2]); //ip host
+	// Get the default values
+	type 				= atoi(argv[1]);
+	s_ClientConnectPort = atoi(argv[2]);
+	s_InputPort 		= atoi(argv[3]);
+
+	if(argc == 5){
+		host = malloc(strlen(argv[4]));
+		strcpy(host, argv[4]); //ip host
+		strcpy(s_InputHost, argv[4]);
 	}
-	fprintf(stderr, "> debug 3\n");
 
+	////////////////////////////
+	// INICIALIZA COMUNICACAO //
+	////////////////////////////
 
-// eh primario, espera conexao dos secundarios e manda replica dos adicionados
-// quando altera dado envia para as replicas um request
-	if (type == 1){
-		#define Replica1Port 50000
-		#define Replica2Port 50001
-
-		// prepara servidor e carrega informacoes (persistencia)
-		if ( init_server() == ERROR){
-			printf("Erro ao preparar o servidor informacoes do servidor\n");
+	// eh primario, espera conexao dos secundarios e manda replica dos adicionados
+	// quando altera dado envia para as replicas um request
+	if (type == TypeServer)
+	{
+		printf("Somor um servidor principal...");
+		
+		// Inicializa a lista de clientes para o servidor primario
+		if ( init_primary_server_client_list() == ERROR)
+		{
+			printf("Erro ao preparar o servidor com informacoes dos clientes\n");
 		}
 
-		s = setup_server(port);
-		s_TCP = setup_server_TCP(port);
+		printf("Inicializacao concluida!\n");
+	} 
+	else if(type == TypeBackup) 
+	{
+		printf("Somos um servidor de backup...");
 
-	} else if(type == 2) {
-		int port_tcp = 50000;
-	// eh secundario, pede copia do primario
-	//fica recebendo request a cada mudanca com a lista de servidores e clientes
+		// Precisa de algo aqui?
+		// ...
 
+		printf("Inicializacao concluida!\n");
 	}
-		else{
-			int port_tcp = 50001;
+	else
+	{
+		// Tipo invalido, exit
+		printf("Tipo invalido informado\n");
+		exit(0);
+	}
+
+	// Cria a pasta raiz do servidor de arquivos
+	create_folder(FileFolder);
+
+	// Abre a conexao UDP do servidor primaria (a que sera usada pelos clientes)
+	serverListenSocket = setup_client_listen_server(s_ClientConnectPort);
+
+	// No caso da gente ser um servidor de backup
+	if(type == TypeBackup)
+	{
+		// Devemos realizar uma conexao com o servidor principal!! //
+
+		// Cria o socket para conexao com o server principal
+		int primaryServerSocket = -1;
+		if((s_PrimaryServerSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+		{
+			printf("Erro criando socket para conexao com o servidor principal!\n");
 		}
 
-    // recebe datagrama
-    struct datagram received_datagram;
-    int rc;
-    struct arg_struct *args = NULL;
+		// Ajusta os dados para conexao com o servidor
+		struct sockaddr_in serv_addr;
+		memset(&serv_addr, '0', sizeof(serv_addr));
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(s_InputPort);
+		serv_addr.sin_addr.s_addr = inet_addr(s_InputHost);
 
-	SOCKET clientSocket;
-   	struct  sockaddr_in clientAddr;
-    unsigned int clientLen;
-    clientLen = sizeof(clientAddr);
+		printf("Conectando ao servidor principal na porta %d e ip %s\n", s_InputPort, s_InputHost);
 
-		if (type == 2){
-			struct  sockaddr_in peer2;
-			SOCKET s2;
-			int peerlen2;
-
-			struct datagram my_datagram;
-
-			my_datagram.instruction = 0x40000000;
-
-			if((s2 = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-				printf("Falha na criacao do socket\n");
-				return ERROR;
-		 	}
-			peer2.sin_family = AF_INET;
-			peer2.sin_port = htons(port);
-			peer2.sin_addr.s_addr = inet_addr(host);
-			peerlen2 = sizeof(peer2);
-
-			int rc2 = sendto(s2, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr*) &peer2, peerlen2);
-
-			fprintf(stderr, "> debug 5\n");
-
-			sleep(100);
-
+		// Tenta se conectar com o servidor principal
+		if(connect(s_PrimaryServerSocket, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+		{
+			printf("Erro ao conectar com o servidor principal!\n");
 		}
 
-
-
-    while(1) {
-
-    	pthread_t thread;
-		rc = recvfrom(s, &received_datagram, sizeof(struct datagram), 0, (struct sockaddr *) &clientAddr,(socklen_t *)&clientLen);
-
-		if (rc < 0) {
-			printf("Erro ao receber datagrama\n");
-			return ERROR;
-		}
-		else printf("Servidor recebeu um datagram\n");
-
-		args = (struct arg_struct*)malloc(sizeof *args);
-		args->my_datagram = received_datagram;
-		args->s = s;
-		args->clientAddr = clientAddr;
-
-		// comecar uma thread aqui
-		if ( pthread_create(&thread, NULL, servidor, args) != 0 ) {
+		// Configura o servidor de backup (nos) recebendo a lista de clientes
+		config_backup_server(s_PrimaryServerSocket);
+	}
+	else
+	{
+		// Devemos criar uma thread que ira esperar por requisicoes de conexao tcp de servidores
+		// de backup
+		pthread_t thread;
+		if (pthread_create(&thread, NULL, listen_backup_tcp_requests, NULL) != 0 ) 
+		{
 			printf("Erro na criação da thread\n");
 		}
-		if (type == 2){
-			//espera um pacote com os arquivos do primario
-			//se for type 1, a cada operacao, manda o pacote para os type 2 também
-			}
-    }
+	}
+	
+	// Chama a funcao que espera por mensagens de clientes (bloqueando a continuacao do main aqui)
+	listen_client_messages(&serverListenSocket);
 }
 
-int setup_server(int port) {
+// Update the client.dat 
+void UpdateClientData(int dataSize, char* data)
+{
+	char dir[100] = "database/sync_dir_";
+	strcat(dir,"/");
+	struct file_info fileinfo;
+
+	strcpy(fileinfo.name, "client");
+	strcpy(fileinfo.name, ".dat");
+
+	strcat(dir,fileinfo.name);
+	strcat(dir,fileinfo.extension);
+
+	FILE* file = fopen(dir, "r");
+	if (file == NULL)
+	{
+		printf("Erro realizando o update do client.data\n");
+	}
+
+	fwrite(data, dataSize, 1, file);
+
+	fclose(file);
+}
+
+void* listen_messages_from_primary_server(void* args)
+{
+	// Transforma a variavel socket (vinda dos args)
+	SOCKET socket = *(SOCKET*)args;
+
+	// Espera por uma mensagem do servidor principal (TCP)
+	while(1)
+	{
+		int messageType;
+		char* buffer;
+
+		// Espera ate receber uma mensagem do servidor principal
+		int messageSize = tcp_read(socket, &messageType, (void**)&buffer);
+			
+		// Verifica se é um arquivo novo ou uma atualizacao do client.dat
+		if(messageType == BackupServerNewFileMessage)
+		{
+			printf("Novo arquivo recebido, do servidor principal\n");
+
+			// Coloca esse novo arquivo na pasta backup
+			// TODO: ...
+		}
+		// É uma atualizacao do client.dat (BackupServerClientFileUpdate)
+		else
+		{
+			printf("Atualizacao do client.dat recebida! Atualizando arquivo...\n");
+
+			// Atualiza o client.dat
+			UpdateClientData(messageSize, buffer);
+		}
+
+		// Deleta a array temporaria
+		free(buffer);
+	}
+}
+
+void* listen_backup_tcp_requests(void* args)
+{
+	int sockfd;
+	struct sockaddr_in serverAddress;
+
+	printf("Inicializando a escuta para novas conexoes de servidores de backup... ");
+
+	// Cria o socket que usaremos para receber as conexoes
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		printf("ERROR opening socket -> tcp_requests\n");
+		exit(0);
+	}
+
+	// seta informacoes IP/Porta do servidor remoto
+	serverAddress.sin_family = AF_INET;
+	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY); // inet_addr(s_InputHost)
+	serverAddress.sin_port = htons(s_InputPort);
+	bzero(&(serverAddress.sin_zero), 8);	
+
+	// associa configuracoes locais com socket
+	if (bind(sockfd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0)
+	{
+		printf("ERROR on binding -> tcp_requests\n");
+		exit(0);
+	}		
+			
+	// Listen to this socket
+	listen(sockfd, 8);
+
+	printf("Inicializacao concluida, listen ativo!\n");
+
+	// Fica aceitando conexoes
+	while(1)
+	{
+		struct sockaddr_in backupAddress;
+		socklen_t size = sizeof(backupAddress);
+
+		printf("Esperando por nova conexao de um servidor de backup...\n");
+
+		// Accept a new connection
+		int newSocket = accept(sockfd, (struct sockaddr*) &backupAddress, &size);
+
+		// Print
+		printf("Novo servidor de backup connectado na porta: %d\n", newSocket);
+
+		// Add this new backup socket to our array
+		s_BackupSockets[s_BackupSocketsInUse] = newSocket;
+
+		// Increment the socket count
+		s_BackupSocketsInUse++;
+
+		// Envia todos os dados necessarios para esse novo servidor de backup
+		// TODO: ... do servidor principal para os server de backup (client.dat)
+	}
+}
+
+void* listen_client_messages(void* args)
+{
+	// Transforma a variavel socket (vinda dos args)
+	SOCKET clientListenSocket = *(SOCKET*)args;
+
+	// ...
+	while(1)
+	{
+		// A estrutura do cliente que sera atualizada quando recebermos uma nova mensagem
+		struct sockaddr_in clientAddr;
+		int messageType;
+		void* data;
+		
+		// Recebe uma nova mensagem do cliente
+		int messageSize = udp_read(clientListenSocket, &clientAddr, &messageType, &data);
+		
+		// Verifica se a mensagem é um cliente adicionando o arquivo novo
+		if(messageType == PrimaryServerNewFileMessage)
+		{
+			printf("Novo arquivo recevido do cliente, atualizando arquivo...\n");
+
+			// Devemos salvar esse arquivo que recebeu do cliente
+			// TODO: ...
+
+			printf("Enviando arquivo recebido para %d servidores de backup.\n", s_BackupSocketsInUse);
+
+			// Devemos enviar para os servidores de backup esse arquivo
+			for(int i=0; i<s_BackupSocketsInUse; i++)
+			{
+				// Envia a mensagem de arquivo novo para esse servidor de backup
+				tcp_write(s_BackupSockets[i], BackupServerNewFileMessage, messageSize, data);
+			}
+
+			printf("Servidores de backup atualizados!\n");
+		}
+		// É um envio da lista de servidores pelo lado do cliente (devemos assumir como servidor
+		// principal) (PrimaryServerServerList)
+		else
+		{
+			printf("Lista de servidores recebida, devemos assumir como servidor principal!\n");
+
+			// Se recebemos esse arquivo, nos devemos ser o novo "servidor principal", logo
+			// precisamos abrir uma conexao com os servidores de backup recebidos nessa lista
+			// Antes disso devemos criar uma thread que ira esperar por requisicoes de conexao 
+			// tcp de servidores de backup
+			pthread_t thread;
+			if (pthread_create(&thread, NULL, listen_backup_tcp_requests, NULL) != 0 ) 
+			{
+				printf("Erro na criação da thread -> listen_backup_tcp_requests\n");
+			}
+
+			// Agora precisamos de alguma forma avisar os outros servidores de backup
+			// que eles devem cancelar a conexao antiga com o antigo servidor principal 
+			// (afinal ele näo está mais acessível) e que devem se conectar com esse aqui 
+			// (acabamos de criar uma thread logo acima para receber essas conexoes), 
+			// podemos usar a lista de servidores que o cliente tem (e que foi recebida
+			// aqui) de forma a saber quais sao os enderecos e portas desses servidores 
+			// de backup e avisar eles que devem se conectar com esse aqui.
+
+			// TODO: Fazer isso que foi dito acima, existem varias formas mas a mais 
+			// facil que eu penso agora seria enviar uma mensagem pela porta UDP (que 
+			// cada servidor de backup tem aberta) dizendo que ele deve se conectar com
+			// tal endereco e porta (mandar na mensagem isso), essa conexao UDP deveria
+			// ser utilizada apenas para clientes mas nesse caso seria uma gambiarra 
+			// aceitável... Enfim, precisamos fazer de alguma forma que os outros 
+			// servidores de backup se conectem com o novo primario
+
+			printf("Conexoes com servidores de backup abertas!!\n");
+
+			// Devemos fechar a thread que espera pelas mensagens do servidor principal (afinal 
+			// nos somos o servidor principal agora) e enviar uma mensagem para 
+			// TODO: Podemos salvar o pthread variable globalmente e aqui fechá-lo
+		}
+
+		// Limpa os dados temporarios
+		free(data);
+	}
+}
+
+int setup_client_listen_server(int port) {
 
 	struct  sockaddr_in peer;
 
 	SOCKET s;
 
-	int peerlen, n;
+	int n;
 
 	if ((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		printf("Falha na criacao do socket\n");
 	    exit(1);
  	}
 
+	 printf("Abrindo socket para receber mensagens de cliente na porta: %d\n", port);
+
     // Define domínio, IP e porta a receber dados
 	memset((void *) &peer,0,sizeof(struct sockaddr_in));
 	peer.sin_family = AF_INET;
 	peer.sin_addr.s_addr = htonl(INADDR_ANY); // Recebe de qualquer IP
-	peer.sin_port = htons(port); // Recebe na porta especificada na linha de comando
-	peerlen = sizeof(peer);
+	peer.sin_port = htons(port + 1000); // Recebe na porta especificada na linha de comando
 
 	// Associa socket com estrutura peer
-	if(bind(s,(struct sockaddr *) &peer, peerlen)) {
+	if(bind(s,(struct sockaddr *) &peer, sizeof(peer))) {
 	    printf("Erro no bind\n");
 	    exit(1);
 	}
 
-    printf("Socket inicializado. Aguardando mensagens...\n\n");
+    printf("Socket inicializado. Aguardando mensagens de clientes...\n");
     return s;
 }
 
-int setup_server_TCP(int port) {
+int config_backup_server(SOCKET serverSocket)
+{
+	// Recebe o arquivo clients.dat do servidor principal
+	// ...
+
+	// TODO: Precisamos receber esse arquivo do servidor principal e salva-lo...
+}
+
+/*
+int setup_backup_tpc_server(int port) {
 
 	struct  sockaddr_in peer_TCP;
 
@@ -392,8 +772,9 @@ int setup_server_TCP(int port) {
     printf("Socket TCP inicializado. Aguardando mensagens...\n\n");
     return s_TCP;
 }
+*/
 
-int init_server() {
+int init_primary_server_client_list() {
 
 	// carrega a lista de clientes
 	if(access("clients.dat", F_OK ) != -1)
@@ -406,8 +787,20 @@ int init_server() {
 			clients[i].logged_in = 0;
 			save_clients();
 		}
-
 	}
+}
+
+int create_folder(char* _name)
+{
+	if(mkdir(_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
+		//printf("Pasta %s criada.\n", dir_name);
+
+	{}
+	else{
+		//printf("Pasta %s já existe.\n", dir_name);
+		return ERROR;
+	}
+	return SUCCESS;
 }
 
 int create_database_structure() {
@@ -417,7 +810,7 @@ int create_database_structure() {
 	if(mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0)
 		//printf("Pasta %s criada.\n", dir_name);
 
-{}
+	{}
 	else{
 		//printf("Pasta %s já existe.\n", dir_name);
 		return ERROR;
