@@ -48,6 +48,10 @@ int s_BackupSocketsInUse = 0;
 // Essa é o socket de conexao com o servidor principal, utilizado pelos backups
 int s_PrimaryServerSocket = -1;
 
+//Array de servidores
+struct server servers[100]; 
+
+
 // --- FUNÇÕES AUXILIARES ---
 
 int create_database_structure();
