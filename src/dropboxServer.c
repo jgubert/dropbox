@@ -970,7 +970,6 @@ int get_higher_active_server_id() {
 		if(servers[i].active == SERVER_ACTIVE) {
 			if(servers[i].id > higher_id) {
 				higher_id = servers[i].id;
-				break;
 			}
 		}
 	}
