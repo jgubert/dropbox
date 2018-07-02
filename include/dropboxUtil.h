@@ -18,6 +18,11 @@
 #define SERVER_ACTIVE 1
 #define SERVER_INACTIVE -1
 
+// Servers
+#define MAXSERVERS 100
+#define SERVER_PRIMARY 1
+#define SERVER_BACKUP 2
+
 #define BUFFER_SIZE 1250
 #define MAXUSERS 10
 #define MAXDEVICES 2
