@@ -50,6 +50,10 @@ int s_BackupSocketsInUse = 0;
 // Essa é o socket de conexao com o servidor principal, utilizado pelos backups
 int s_PrimaryServerSocket = -1;
 
+//Array de servidores
+struct server servers[MAXSERVERS]; 
+
+
 // --- FUNÇÕES AUXILIARES ---
 
 int create_database_structure();
@@ -63,6 +67,7 @@ void* listen_client_messages(void* args);
 void* listen_server_messages(void* args);
 void* listen_backup_tcp_requests(void* args);
 int setup_client_listen_server(int port);
+void init_servers_list();
 
 void* backup1(void* args){
 
@@ -381,6 +386,14 @@ int main(int argc, char *argv[]) {
 		{
 			printf("Erro ao preparar o servidor com informacoes dos clientes\n");
 		}
+		
+		// Inicializa a lista de servidores 
+		init_servers_list();
+		// Inicializa este servidor primario
+		servers[0].active = SERVER_ACTIVE;
+		servers[0].type = SERVER_PRIMARY;
+		servers[0].port = s_ClientConnectPort;
+		//TODO: servers[0].ip = xxx;	
 
 		printf("Inicializacao concluida!\n");
 	} 
@@ -562,6 +575,14 @@ void* listen_backup_tcp_requests(void* args)
 
 		// Increment the socket count
 		s_BackupSocketsInUse++;
+		
+		// Pega o maior ID ativo da lista de servidores, incrementa, e adiciona o novo backup na lista
+		int backup_id = get_higher_active_server_id();
+		backup_id++;
+		servers[backup_id].active = SERVER_ACTIVE;
+		servers[backup_id].type = SERVER_BACKUP;
+		servers[backup_id].port = newSocket;
+		//TODO: servers[backup_id].ip = ;
 
 		// Envia todos os dados necessarios para esse novo servidor de backup
 		// TODO: ... do servidor principal para os server de backup (client.dat)
@@ -892,6 +913,28 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 /*********************************************
 *	FUNÇÕES AUXILIARES DO SERVIDOR
 **********************************************/
+
+void init_servers_list() {
+	int i;
+	for(i=0;i<MAXSERVERS;i++) {
+		struct server server_init;
+		server_init.active = SERVER_INACTIVE;
+		server_init.id = i;
+		servers[i] = server_init;
+	}
+}
+
+int get_higher_active_server_id() {
+	int higher_id = 0;
+	for(i=0;i<MAXSERVERS;i++) {
+		if(servers[i].active == SERVER_ACTIVE) {
+			if(servers[i].id > higher_id) {
+				higher_id = servers[i].id;
+			}
+		}
+	}
+	return higher_id;
+}
 
 void create_path(char *user){
 printf("%s\n", user);

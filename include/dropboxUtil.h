@@ -14,6 +14,15 @@
 #define TRUE 1
 #define FALSE 0
 
+// Exclusao logica para servidores
+#define SERVER_ACTIVE 1
+#define SERVER_INACTIVE -1
+
+// Servers
+#define MAXSERVERS 100
+#define SERVER_PRIMARY 1
+#define SERVER_BACKUP 2
+
 #define BUFFER_SIZE 1250
 #define MAXUSERS 10
 #define MAXDEVICES 2
@@ -75,12 +84,13 @@ struct arg_portas {
 
 };
 
-typedef struct server_list{
+struct server{
 	int type;	// 1 - primario 2 - backup
 	char ip[16];		//endereço ip do servidor
 	int port;		//porta do servidor
-	struct server_list *prox;	//proximo servidor
-}servidores;
+	int id;		//id de chegada
+	int active;		//para fazer exclusão lógica: '1' - ativo 	'-1' - inativo
+};
 
 struct instruction {
 	int command_id;
