@@ -69,13 +69,15 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 
 	// Ajusta o tipo de mensagem
 	*messageType = *(int*)localBuffer;
+	printf("DEBUG> messageType: %d\n", messageType);
 
 	// Copia os dados
 	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
 
 	// Deleta o buffer local
-	//free(localBuffer);
-	bzero(localBuffer,MaxUDPDatagramSize);
+	printf("%p\n", ( char * )localBuffer );
+	free(localBuffer);
+	//bzero(localBuffer,MaxUDPDatagramSize);
 
 	return rc - sizeof(int);
 }
@@ -246,9 +248,11 @@ void* interface(void *args){
 
 		do {
 			// envia datagrama
+			printf("esta tentando enviar datagrama\n");
 			rc = udp_write(socket_id, arguments->portaServ, arguments->IPServ, sizeof(struct datagram),FileMessageInterface, &my_datagram);
 			// recebe datagrama com ACK
 			void* datag;
+			printf("esta tentando receber ack\n");
 			rc = udp_read(socket_id, &addr_cli, &messageType, &datag);
 
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
@@ -313,8 +317,10 @@ int main(int argc, char *argv[] ){
 	//	exit(1);
 	//}
 	// envia datagrama
-	void* data = "Conex";
+	void* data = user_name;
+	printf("%s",user_name );
 	rc = udp_write(socket_id, port, host, 5 ,FileMessageInterface, &data);
+
 	// recebe datagrama com ACK
 	struct sockaddr_in addr_cli;
 	int messageType;
@@ -327,18 +333,18 @@ int main(int argc, char *argv[] ){
 	
 	printf("passou por aqui");
 	// tratamento do que volta do servidar na hora da conexão
-	int instruction = my_datagram.instruction;
+	//int instruction = my_datagram.instruction;
 
 	//printf("DEBUG: %x\n", instruction);
 
-	int instruction_id = desassembly_server_inst(instruction);
+	//int instruction_id = desassembly_server_inst(instruction);
 	//printf("DEBUG: %d\n", instruction_id);
 
-	if (handle_server_connectivity_status(instruction_id) == ERROR) {
-			printf("\nDEBUG terminando a main sem conseguir se conectar ao servidor...\n");
-			return 0;
-	}
-	printf("passou por aqui2");
+	//if (handle_server_connectivity_status(instruction_id) == ERROR) {
+	//		printf("\nDEBUG terminando a main sem conseguir se conectar ao servidor...\n");
+	//		return 0;
+	//}
+	//printf("passou por aqui2");
 
 	create_sync_dir();
 
@@ -360,7 +366,7 @@ int main(int argc, char *argv[] ){
 	printf("passou por aqui4");
 
 	pthread_t thread2;
-	if (pthread_create(&thread2, NULL, interface, NULL) != 0 )
+	if (pthread_create(&thread2, NULL, interface, (struct arg_portas*)args) != 0 )
 	{
 		printf("Erro na criação da thread -> interface\n");
 	}

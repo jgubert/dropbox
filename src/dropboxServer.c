@@ -607,7 +607,7 @@ void* listen_client_messages(void* args)
 		struct sockaddr_in clientAddr;
 		int messageType;
 		void* data;
-
+		printf("DEBUG> passou aqui\n");
 		// Recebe uma nova mensagem do cliente
 		int messageSize = udp_read(clientListenSocket, &clientAddr, &messageType, &data);
 
@@ -643,11 +643,13 @@ void* listen_client_messages(void* args)
 			else{
 				if(messageType == FileMessageInterface)
 				{
+					printf("FileMessageInterface \n");
 					//recebe um "Conex"
 					struct sockaddr_in addr_cli;
 					int messageType;
 					void* datag;
 					int rc = udp_read(clientListenSocket, &addr_cli, &messageType, &datag);
+					create_path((void*) datag);
 					printf("oi \n");
 					if (rc >= 0)
 					{
