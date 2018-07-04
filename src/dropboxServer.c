@@ -593,6 +593,7 @@ void* listen_client_messages(void* args)
 {
 	// Transforma a variavel socket (vinda dos args)
 	SOCKET clientListenSocket = *(SOCKET*)args;
+	printf("listen_client \n");
 
 	// ...
 	while(1)
@@ -637,7 +638,19 @@ void* listen_client_messages(void* args)
 			else{
 				if(messageType == FileMessageInterface)
 				{
-					//CHAMAR A FUNCAO SERVIDOR!!!!!
+					//recebe um "Conex"
+					struct sockaddr_in addr_cli;
+					int messageType;
+					void* datag;
+					int rc = udp_read(clientListenSocket, &addr_cli, &messageType, &datag);
+					printf("oi \n");
+					if (rc >= 0)
+					{
+						printf("chegou aqui \n");
+						//envia um "ACK"
+						void* data = "ACK";
+						rc = udp_write(clientListenSocket, 7001, "127.0.0.1", 3 ,FileMessageInterface, &data);
+					}
 				}
 				else{
 			printf("Lista de servidores recebida, devemos assumir como servidor principal!\n");

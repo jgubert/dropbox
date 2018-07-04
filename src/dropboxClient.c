@@ -127,14 +127,14 @@ void* frontEnd(void *args)
 	  {
 		// Envia mensagem para servidor primario pedindo nova lista de servidores
 		int messageSize = udp_write(s_cli, arguments->portaServ, arguments->IPServ, 31, PrimaryAskForServerList, &data);
-		if(messageSize > 0)
+		if(messageSize >= 0)
 		{
 			envio++;
 		}
 
 		// Recebe lista de servidores
 		int messageSizeRead = udp_read(s_cli, &addr_cli, &messageType, &data);
-		if (messageSizeRead > 0)
+		if (messageSizeRead >= 0)
 		{
 			recebimento++;
 		}
@@ -308,11 +308,24 @@ int main(int argc, char *argv[] ){
   	port = atoi(argv[3]);   //Port
 
     // Estabelece sessao entre cliente e servidor e recebe instrucao do servidor com status da conexao
-	if(login_server(host, port) == ERROR) {
-		printf("[main] Erro ao estabelecer sessao em login_server\n");
-		exit(1);
+	//if(login_server(host, port) == ERROR) {
+	//	printf("[main] Erro ao estabelecer sessao em login_server\n");
+	//	exit(1);
+	//}
+	// envia datagrama
+	void* data = "Conex";
+	rc = udp_write(socket_id, port, host, 5 ,FileMessageInterface, &data);
+	// recebe datagrama com ACK
+	struct sockaddr_in addr_cli;
+	int messageType;
+	void* datag;
+	rc = udp_read(socket_id, &addr_cli, &messageType, &datag);
+	if(rc >= 0)
+	{
+		printf("recebeu ACK");
 	}
-printf("passou por aqui");
+	
+	printf("passou por aqui");
 	// tratamento do que volta do servidar na hora da conexão
 	int instruction = my_datagram.instruction;
 
@@ -413,6 +426,7 @@ int login_server(char *host, int port) {
 
 	int rc;
 	do {
+		
 		// envia datagrama
 		rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 		// recebe datagrama com ACK
@@ -597,6 +611,7 @@ int get_file(char *filename){
 **********************************************/
 
 int assembly_client_inst(int *instruction, int instruction_id) {
+	printf("ta aqui");
 
 	*(instruction) = *(instruction) & 0x07ffffff;		// zera a parte que carrega as instrucoes
 
