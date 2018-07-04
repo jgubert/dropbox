@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <dirent.h>
+#include <fcntl.h>
 
 #define GET_SYNC_DIR 4
 #define Replica1Port 50000
@@ -935,6 +937,40 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 /*********************************************
 *	FUNÇÕES AUXILIARES DO SERVIDOR
 **********************************************/
+
+
+void list_dir(char* sync_dir_path) {
+	DIR *dir;
+	struct dirent *directory;
+	struct stat file_buffer;
+    int open_file_status;
+
+	if ((dir = opendir (sync_dir_path)) != NULL) {
+		while ((directory = readdir (dir)) != NULL) {
+		if((strcmp(directory->d_name,".") != 0) && (strcmp(directory->d_name,"..") != 0)) {
+			char* file_path = malloc(strlen(sync_dir_path) + strlen(directory->d_name) + 1);
+			strcpy(file_path, sync_dir_path);
+			strcat(file_path, directory->d_name);
+			
+			open_file_status = stat(file_path, &file_buffer);
+			long file_size = 0;
+			
+			if(open_file_status == 0) {
+				file_size = file_buffer.st_size;
+			}
+			
+			printf ("%s : %d\n", directory->d_name, file_size);
+			}
+		}
+		closedir (dir);
+	} else {
+		printf("ERROR: could not open directory, in list_dir function");
+		return -1;
+	}
+	return 0;
+}
+
+
 
 void init_servers_list() {
 	int i;
