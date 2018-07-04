@@ -431,7 +431,7 @@ int login_server(char *host, int port) {
 	}
 
 	// prepara instrução
-	//assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
+	assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
 
 	int rc;
 	/*
@@ -444,7 +444,8 @@ int login_server(char *host, int port) {
 
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe o ACK do servidor
 	*/
-	printf("[login_server]Socket: %d\n\tPorta: %d\n\tHost: %s\n",socket_id, port, host);
+	printf("[login_server]Socket: %d\n\tPorta: %d\n\tHost: %s\nUser: %s",socket_id, port, host, my_datagram.username);
+
 
 	rc = udp_write(socket_id, port, host, 500, ESTABLISH_CONNECTION, &my_datagram);
 

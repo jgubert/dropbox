@@ -85,6 +85,8 @@ void* backup2(void* args){
 
 void* servidor(void* args) {
 
+	printf("[servidor]\n");
+
 	struct arg_struct *arguments = (struct arg_struct *)args;
 	int instruction_id;
 	int clientLen = sizeof(arguments->clientAddr);
@@ -95,6 +97,8 @@ void* servidor(void* args) {
 	//printf("Instruction id: %d\n", instruction_id);
 
 	if (instruction_id == ESTABLISH_CONNECTION) {
+		printf("[servidor] ESTABLISH_CONNECTION\n");
+
 
 		// verifica se usuario existe no sistema
 		if ( is_first_connection(arguments->my_datagram.username) ){
@@ -617,11 +621,26 @@ void* listen_client_messages(void* args)
 		struct sockaddr_in clientAddr;
 		int messageType;
 		void* data;
+		struct datagram received_datagram;
+		struct arg_struct *args = NULL;
+
 		printf(">DEBUG: tentando receber algo em udp..\n");
 		// Recebe uma nova mensagem do cliente
 		int messageSize = udp_read(clientListenSocket, &clientAddr, &messageType, &data);
-
+		memcpy(&received_datagram, data, sizeof(received_datagram));
+		printf("[listen_client] User: %s\n", received_datagram.username);
 		printf("DEBUG> messageType: %d\n", messageType);
+
+		args = (struct arg_struct*)malloc(sizeof *args);
+		args->my_datagram = received_datagram;
+		args->s = clientListenSocket;
+		args->clientAddr = clientAddr;
+
+		// comecar uma thread aqui
+		pthread_t threadServidor;
+		if ( pthread_create(&threadServidor, NULL, servidor, args) != 0 ) {
+			printf("Erro na criação da thread\n");
+		}
 
 		// Verifica se a mensagem é um cliente adicionando o arquivo novo
 		if(messageType == PrimaryServerNewFileMessage)
