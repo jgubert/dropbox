@@ -44,7 +44,7 @@ char buffer[BUFFER_SIZE];
 int s_InputPort;
 char s_InputHost[100];
 int s_ClientConnectPort;
-char s_LocalIp[100];
+char* s_LocalIp;
 
 // Todas as conexoes de servidores de backup (sockets)
 int s_BackupSockets[MaximumBackupServers];
@@ -57,7 +57,7 @@ int s_PrimaryServerSocket = -1;
 struct server servers[MAXSERVERS];
 
 //Array de Sync_dir temporario
-struct file_info sync_dir_files[MAXFILES]
+struct file_info sync_dir_files[MAXFILES];
 
 
 // --- FUNÇÕES AUXILIARES ---
@@ -301,8 +301,13 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 	// Ajusta o tipo de mensagem
 	*messageType = *(int*)localBuffer;
 
+	printf("[udp_write] messageType = %d\n", *messageType);
+	printf("[udp_write] localBuffer = %s\n", localBuffer);
+
 	// Copia os dados
 	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
+
+	printf("[udp_write] BUFFER: %s\n", buffer);
 
 	// Deleta o buffer local
 	free(localBuffer);
@@ -375,7 +380,7 @@ int main(int argc, char *argv[]) {
 		host = malloc(strlen(argv[4]));
 		strcpy(host, argv[4]); //ip host
 		strcpy(s_InputHost, argv[4]);
-		
+
 	} else {
 		s_LocalIp = malloc(strlen(argv[4]));
 		strcpy(s_LocalIp, argv[4]);
@@ -603,7 +608,7 @@ void* listen_client_messages(void* args)
 {
 	// Transforma a variavel socket (vinda dos args)
 	SOCKET clientListenSocket = *(SOCKET*)args;
-	printf("listen_client \n");
+	printf(">DEGUB: Entrou na listen_client_messages \n");
 
 	// ...
 	while(1)
@@ -612,7 +617,7 @@ void* listen_client_messages(void* args)
 		struct sockaddr_in clientAddr;
 		int messageType;
 		void* data;
-		printf("DEBUG> passou aqui\n");
+		printf(">DEBUG: tentando receber algo em udp..\n");
 		// Recebe uma nova mensagem do cliente
 		int messageSize = udp_read(clientListenSocket, &clientAddr, &messageType, &data);
 
@@ -726,7 +731,8 @@ int setup_client_listen_server(int port) {
 	memset((void *) &peer,0,sizeof(struct sockaddr_in));
 	peer.sin_family = AF_INET;
 	peer.sin_addr.s_addr = htonl(INADDR_ANY); // Recebe de qualquer IP
-	peer.sin_port = htons(port + 1000); // Recebe na porta especificada na linha de comando
+	//NAO SEI PQ TAVA HTONS(PORT + 1000) !!!!!
+	peer.sin_port = htons(port); // Recebe na porta especificada na linha de comando
 
 	// Associa socket com estrutura peer
 	if(bind(s,(struct sockaddr *) &peer, sizeof(peer))) {
@@ -962,7 +968,7 @@ int list_dir(char* sync_dir_path) {
 
 	// Reset the global array of directory files
 	reset_sync_dir_array();
-	
+
 	if ((dir = opendir (sync_dir_path)) != NULL) {
 		int i = 0;
 		while ((directory = readdir (dir)) != NULL) {
@@ -970,14 +976,14 @@ int list_dir(char* sync_dir_path) {
 			char* file_path = malloc(strlen(sync_dir_path) + strlen(directory->d_name) + 1);
 			strcpy(file_path, sync_dir_path);
 			strcat(file_path, directory->d_name);
-			
+
 			open_file_status = stat(file_path, &file_buffer);
 			int file_size = 0;
-			
+
 			if(open_file_status == 0) {
 				file_size = file_buffer.st_size;
 			}
-			
+
 			// Add file_info to the global temporary array 'sync_dir_files'
 			struct file_info dir_file;
 			strcpy(dir_file.name, directory->d_name);

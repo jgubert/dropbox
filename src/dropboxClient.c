@@ -69,7 +69,6 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 
 	// Ajusta o tipo de mensagem
 	*messageType = *(int*)localBuffer;
-	printf("DEBUG> messageType: %d\n", messageType);
 
 	// Copia os dados
 	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
@@ -92,18 +91,21 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 	char* buffer = malloc(MaxUDPDatagramSize + sizeof(int));
 
 	// Copia o tipo de mensagem
+	printf("[udp_write] messageType = %d\n", messageType);
 	memcpy(buffer, &messageType, sizeof(int));
 
 	// Copia os dados da mensagem
 	memcpy(&buffer[sizeof(int)], datagram, size);
+
+	printf("\tBUFFER: %d\n", *(int*)buffer);
 
 	peer.sin_family = AF_INET;
 	peer.sin_port = htons(port);
 	peer.sin_addr.s_addr = inet_addr(host);
 	peerlen = sizeof(peer);
 
-	int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
-
+	//int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
+	int rc = sendto(socket, buffer, size, 0, (struct sockaddr*) &peer, peerlen);
 	// Limpa o buffer temporario
 	free(buffer);
 
@@ -312,14 +314,15 @@ int main(int argc, char *argv[] ){
   	port = atoi(argv[3]);   //Port
 
     // Estabelece sessao entre cliente e servidor e recebe instrucao do servidor com status da conexao
-	//if(login_server(host, port) == ERROR) {
-	//	printf("[main] Erro ao estabelecer sessao em login_server\n");
-	//	exit(1);
-	//}
+	if(login_server(host, port) == ERROR) {
+		printf("[main] Erro ao estabelecer sessao em login_server\n");
+		exit(1);
+	}
 	// envia datagrama
-	void* data = user_name;
-	printf("%s",user_name );
-	rc = udp_write(socket_id, port, host, 5 ,FileMessageInterface, &data);
+	//void* data = user_name;
+	//printf("%s",user_name );
+	printf("Size of Datagram: %d\n", sizeof(my_datagram));
+	rc = udp_write(socket_id, port, host, MaxUDPDatagramSize, FileMessageInterface, &my_datagram);
 
 	// recebe datagrama com ACK
 	struct sockaddr_in addr_cli;
@@ -330,7 +333,7 @@ int main(int argc, char *argv[] ){
 	{
 		printf("recebeu ACK");
 	}
-	
+
 	printf("passou por aqui");
 	// tratamento do que volta do servidar na hora da conexão
 	//int instruction = my_datagram.instruction;
@@ -428,17 +431,32 @@ int login_server(char *host, int port) {
 	}
 
 	// prepara instrução
-	assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
+	//assembly_client_inst(&my_datagram.instruction, ESTABLISH_CONNECTION);
 
 	int rc;
+	/*
 	do {
-		
+
 		// envia datagrama
 		rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
 		// recebe datagrama com ACK
 		rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0, (struct sockaddr *) &peer, (socklen_t *) &peerlen);
 
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe o ACK do servidor
+	*/
+	printf("[login_server]Socket: %d\n\tPorta: %d\n\tHost: %s\n",socket_id, port, host);
+
+	rc = udp_write(socket_id, port, host, 500, ESTABLISH_CONNECTION, &my_datagram);
+
+	// recebe datagrama com ACK
+	struct sockaddr_in addr_cli;
+	int messageType;
+	void* datag;
+	rc = udp_read(socket_id, &addr_cli, &messageType, &datag);
+	if(rc >= 0)
+	{
+		printf("recebeu ACK");
+	}
 
 	return SUCCESS;
 }
