@@ -22,8 +22,10 @@
 #define BackupServerNewFileMessage		0
 #define BackupServerClientFileUpdate	1
 
+#define FileMessageInterface		3
 #define PrimaryServerNewFileMessage		0
 #define PrimaryServerServerList			1
+#define PrimaryAskForServerList			2
 
 #define MaxUDPDatagramSize				1024
 
@@ -67,60 +69,6 @@ void* backup1(void* args){
 }
 
 void* backup2(void* args){
-
-}
-
-void* listenFE(void* args){
-
-	struct arg_portas *arguments = (struct arg_portas *)args;
-
-	int sockfd, newsockfd, n;
-	socklen_t clilen;
-	char buffer[256];
-	struct sockaddr_in addr_serv, addr_cli;
-
-	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-			printf("ERROR opening socket");
-
-
-			// seta informacoes IP/Porta locais
-			addr_cli.sin_family = AF_INET;
-			addr_cli.sin_addr.s_addr = htonl(INADDR_ANY);
-			addr_cli.sin_port = htons(arguments->portaCli); //porta cliente
-
-			// associa configuracoes locais com socket
-			if (bind(sockfd, (struct sockaddr *) &addr_serv, sizeof(addr_serv)) < 0)
-				printf("ERROR on binding");
-
-		  // seta informacoes IP/Porta do servidor remoto
-		  addr_serv.sin_family = AF_INET;
-		  addr_serv.sin_addr.s_addr = inet_addr(&arguments->IPServ);
-		  addr_serv.sin_port = htons(arguments->portaServ);
-			bzero(&(addr_serv.sin_zero), 8);
-
-
-		listen(sockfd, 8);
-
-		clilen = sizeof(struct sockaddr_in);
-	if ((newsockfd = accept(sockfd, (struct sockaddr *) &addr_cli, &clilen)) == -1)
-		printf("ERROR on accept");
-	
-	bzero(buffer, 256);
-
-	/* read from the socket */
-	n = read(newsockfd, buffer, 256);
-	if (n < 0)
-		printf("ERROR reading from socket");
-	printf("Here is the message: %s\n", buffer);
-
-	/* write in the socket */
-	n = write(newsockfd,buffer, 256);
-	if (n < 0)
-		printf("ERROR writing to socket");
-
-	close(newsockfd);
-	close(sockfd);
-
 
 }
 
@@ -659,6 +607,16 @@ void* listen_client_messages(void* args)
 		// principal) (PrimaryServerServerList)
 		else
 		{
+			if (messageType == PrimaryAskForServerList)
+				{
+					//enviar server list 
+				}
+			else{
+				if(messageType == FileMessageInterface)
+				{
+					//CHAMAR A FUNCAO SERVIDOR!!!!!
+				}
+				else{
 			printf("Lista de servidores recebida, devemos assumir como servidor principal!\n");
 
 			// Se recebemos esse arquivo, nos devemos ser o novo "servidor principal", logo
@@ -692,6 +650,8 @@ void* listen_client_messages(void* args)
 			// Devemos fechar a thread que espera pelas mensagens do servidor principal (afinal 
 			// nos somos o servidor principal agora) e enviar uma mensagem para 
 			// TODO: Podemos salvar o pthread variable globalmente e aqui fechá-lo
+			}
+			}
 		}
 
 		// Limpa os dados temporarios

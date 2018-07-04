@@ -26,6 +26,11 @@
 
 #define	SOCKET	int
 #define INVALID_SOCKET  ((SOCKET)~0)
+#define MaxUDPDatagramSize				1024
+#define PrimaryServerNewFileMessage		0
+#define PrimaryServerServerList			1
+#define PrimaryAskForServerList			2
+#define FileMessageInterface			3
 
 void changeSocket();
 
@@ -41,12 +46,131 @@ char buffer_receiver[BUFFER_SIZE];
 struct datagram my_datagram; // datagrama que será enviado
 
 
-int interface(){
+int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, void** buffer)
+{
+	// Cria um buffer temporario geral e outro local
+	*buffer = malloc(MaxUDPDatagramSize);
+	char* localBuffer = (char*)malloc(MaxUDPDatagramSize + sizeof(int));
+
+	// Estrutura de info do cliente que receberemos a mensagem
+	unsigned int clientLen = sizeof(&clientAddr);
+
+	// NAO USADO ... Ajusta um tempo de timeout
+	// int timeout = 1000;
+	// setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+	
+	// Recebe uma nova mensagem
+	int rc = recvfrom(socket, localBuffer, sizeof(struct datagram), 0, (struct sockaddr *) clientAddr,(socklen_t *)&clientLen);
+	if (rc < 0) 
+	{
+		printf("Erro ao receber datagrama\n");
+		return ERROR;
+	}
+
+	// Ajusta o tipo de mensagem
+	*messageType = *(int*)localBuffer;
+
+	// Copia os dados
+	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
+
+	// Deleta o buffer local
+	free(localBuffer);
+
+	return rc - sizeof(int);
+}
+
+// TODO: Mudar o frontend para usar essa funcao
+int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageType, void* datagram)
+{
+	struct  sockaddr_in peer;
+	int peerlen;
+
+	// Cria um buffer temporario que ira ter o tipo de mensagem e a mensagem propriamente dita
+	char* buffer = malloc(MaxUDPDatagramSize + sizeof(int));
+	
+	// Copia o tipo de mensagem
+	memcpy(buffer, &messageType, sizeof(int));
+
+	// Copia os dados da mensagem
+	memcpy(&buffer[sizeof(int)], datagram, size);
+
+	peer.sin_family = AF_INET;
+	peer.sin_port = htons(port);
+	peer.sin_addr.s_addr = inet_addr(host);
+	peerlen = sizeof(peer);
+
+	int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
+
+	// Limpa o buffer temporario
+	free(buffer);
+
+	return rc;
+}
+
+int frontEnd(void *args)
+{
+
+	struct arg_portas *arguments = (struct arg_portas *)args;
+
+	SOCKET s_cli;
+
+	struct sockaddr_in addr_cli;
+	int messageType;
+	void* data;
+
+	data = "cade minha lista de servidores?";
+
+	int envio = 0;
+	int recebimento = 0;
+	  while(1)
+	  {
+		// Envia mensagem para servidor primario pedindo nova lista de servidores
+		int messageSize = udp_write(s_cli, arguments->portaServ, arguments->IPServ, 31, PrimaryAskForServerList, &data);
+		if(messageSize > 0)
+		{
+			envio++;
+		}
+
+		// Recebe lista de servidores
+		int messageSizeRead = udp_read(s_cli, &addr_cli, &messageType, &data);
+		if (messageSizeRead > 0)
+		{
+			recebimento++;
+		}
+		sleep(4);
+
+		if(envio == recebimento)
+		{
+			//o servidor esta respondendo ao chamado do frontend
+			//nao faz nada
+		}
+		else
+		{
+			//o servidor nao respondeu portanto nao existe mais -> chamar o backup para primario
+			//fechar socket do cliente
+			//receber novo ip e nova porta
+			//criar novo socket de cliente nesse ip e porta
+			changeSocket();
+		}
+
+	  }
+
+
+	pthread_exit(NULL);
+}
+
+int interface(void *args){
+
+	struct arg_portas *arguments = (struct arg_portas *)args;
 
 	char line[100];
 	char file_path[100];	// usado em upload e download
 	//char file_name[100]; 	// usado em download e upload
 	char *command = (char*)malloc(sizeof(line));
+
+	struct sockaddr_in addr_cli;
+	int messageType;
+	void* data;
 
 	while(1) {
 		scanf("%[^\n]", line);
@@ -115,11 +239,13 @@ int interface(){
 		}
 
 		// ENVIA DATAGRAMA COM INSTRUCAO PRO SERVIDOR
+
+
 		do {
 			// envia datagrama
-			rc = sendto(socket_id, &my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&peer, peerlen);
+			rc = udp_write(socket_id, arguments->portaServ, arguments->IPServ, sizeof(struct datagram),FileMessageInterface, &my_datagram);
 			// recebe datagrama com ACK
-			rc = recvfrom(socket_id, &my_datagram, sizeof(struct datagram),0,(struct sockaddr *) &peer,(socklen_t *) &peerlen);
+			rc = udp_read(socket_id, &addr_cli, &messageType, &my_datagram);
 
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
@@ -182,7 +308,7 @@ int main(int argc, char *argv[] ){
 		printf("[main] Erro ao estabelecer sessao em login_server\n");
 		exit(1);
 	}
-
+printf("passou por aqui");
 	// tratamento do que volta do servidar na hora da conexão
 	int instruction = my_datagram.instruction;
 
@@ -195,123 +321,36 @@ int main(int argc, char *argv[] ){
 			printf("\nDEBUG terminando a main sem conseguir se conectar ao servidor...\n");
 			return 0;
 	}
+	printf("passou por aqui2");
 
 	create_sync_dir();
-	interface();
+
+	struct arg_portas *args = NULL;
+
+	args = (struct arg_portas*)malloc(sizeof *args);
+	args->portaCli = 5005 + (rand() % 1900);
+	args->portaServ = port;
+	args->IPServ = &host;
+	printf("%d %d %s", args->portaCli, args->portaServ, args->IPServ);
+	printf("passou por aqui3");
+
+	pthread_t thread;
+	if (pthread_create(&thread, NULL, frontEnd, (struct arg_portas*)args) != 0 ) 
+	{
+		printf("Erro na criação da thread -> front_end\n");
+	}
+	printf("passou por aqui4");
+
+	pthread_t thread2;
+	if (pthread_create(&thread2, NULL, interface, NULL) != 0 ) 
+	{
+		printf("Erro na criação da thread -> interface\n");
+	}
 
 	printf("\nDEBUG terminando a main conseguindo se conectar ao servidor...\n");
 
 	return 0; // teste, remover
 
-}
-
-void frontEnd(void *args)
-{
-	struct arg_portas *arguments = (struct arg_portas *)args;
-
-	SOCKET s = 0, s_cli, s_serv;
-	int n;
-	struct sockaddr_in  addr_serv, addr_cli;
-	int connection = 0;
-
-	while(connection == NOT_OPEN)
-	{
-		bzero((char *) &addr_cli, sizeof(addr_cli));
-		// abre socket TCP
-			if ((s = socket(AF_INET, SOCK_STREAM, 0))== INVALID_SOCKET)
-			{
-				printf("Erro iniciando socket\n");
-				exit(1);
-			}
-
-			// seta informacoes IP/Porta locais
-			addr_cli.sin_family = AF_INET;
-			addr_cli.sin_addr.s_addr = htonl(INADDR_ANY);
-			addr_cli.sin_port = htons(arguments->portaCli); //porta cliente
-
-			// associa configuracoes locais com socket
-		  if ((bind(s, (struct sockaddr *)&addr_cli, sizeof(addr_cli))) != 0)
-		  {
-		    printf("erro no bind\n");
-		    close(s);
-		    exit(1);
-		  }
-
-		  // seta informacoes IP/Porta do servidor remoto
-		  addr_serv.sin_family = AF_INET;
-		  addr_serv.sin_addr.s_addr = inet_addr(&arguments->IPServ);
-		  addr_serv.sin_port = htons(arguments->portaServ);
-
-
-		// connecta socket aberto no cliente com o servidor
-		if(connect(s, (struct sockaddr*)&addr_serv, sizeof(addr_serv)) != 0)
-		{
-			//printf("erro na conexao - %d\n", WSAGetLastError());
-			printf("erro na conexao");
-			close(s);
-			exit(1);
-		}
-		else
-		{
-			connection = OPEN;
-		}
-	}
-
-
-		char recvbuf[MAX_PACKET];
-		int envio = 0;
-		int recebimento = 0;
-	  while(1)
-	  {
-
-
-			/* write in the socket */
-			n = write(s, "cade minha lista de servidores?", 31);
-				if (n < 0)
-				{
-					printf("ERROR writing to socket\n");
-				}
-				else
-				{
-					envio++;
-				}
-
-				bzero(recvbuf,MAX_PACKET);
-
-			/* read from the socket */
-				n = read(s, recvbuf, MAX_PACKET);
-				if (n < 0)
-				{
-					printf("ERROR reading from socket\n");
-				}
-				else
-				{
-					recebimento++;
-					sleep(4);
-				}
-
-				printf("%s\n",recvbuf);
-
-
-			if(envio == recebimento)
-			{
-				//o servidor esta respondendo ao chamado do frontend
-				//nao faz nada
-			}
-			else
-			{
-				//o servidor nao respondeu portanto nao existe mais -> chamar o backup para primario
-				//fechar socket do cliente
-				//receber novo ip e nova porta
-				//criar novo socket de cliente nesse ip e porta
-				changeSocket();
-			}
-
-	  }
-
-
-	pthread_exit(NULL);
-	close(s);
 }
 
 void changeSocket()
@@ -331,21 +370,18 @@ int login_server(char *host, int port) {
 	tv.tv_sec = 1;
 	tv.tv_usec = 100000;
 
-	struct arg_portas *args = NULL;
+	//struct arg_portas *args = NULL;
 
-	args = (struct arg_portas*)malloc(sizeof *args);
-	args->portaCli = 5005 + (rand() % 1900);
-	args->portaServ = port;
-	args->IPServ = &host;
+	//args = (struct arg_portas*)malloc(sizeof *args);
+	//args->portaCli = 5005 + (rand() % 1900);
+	//args->portaServ = port;
+	//args->IPServ = &host;
 
-
-	pthread_t thread;
-
-	if ( pthread_create(&thread, NULL, frontEnd, args) != 0 ) {
-		printf("Erro na criação da thread\n");
-	}
-
-
+	//pthread_t thread;
+	//if (pthread_create(&thread, NULL, frontEnd, (struct arg_portas*)args) != 0 ) 
+	//{
+	//	printf("Erro na criação da thread -> front_end\n");
+	//}
 
     // Cria o socket na familia AF_INET (Internet) e do tipo UDP (SOCK_DGRAM)
 	if((socket_id = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
