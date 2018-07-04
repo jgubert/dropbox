@@ -74,7 +74,8 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
 
 	// Deleta o buffer local
-	free(localBuffer);
+	//free(localBuffer);
+	bzero(localBuffer,MaxUDPDatagramSize);
 
 	return rc - sizeof(int);
 }
