@@ -15,6 +15,10 @@
 #define FALSE 0
 
 // Exclusao logica para servidores
+#define ACTIVE 1
+#define INACTIVE -1
+
+// Exclusao logica para servidores
 #define SERVER_ACTIVE 1
 #define SERVER_INACTIVE -1
 
@@ -27,6 +31,7 @@
 #define MAXUSERS 10
 #define MAXDEVICES 2
 #define MAXNAMES 15
+#define MAX_FILE_NAME 256
 #define MAXNAME 8
 #define MAXFILES 10
 #define USER_NAME_MAX_LENGTH 32
@@ -56,10 +61,11 @@
 #define SOCKET int
 
 struct file_info{
-  char name[MAXNAMES];
+  char name[MAX_FILE_NAME];
   char extension[MAXNAME];
   char last_modified[MAXNAME];
   int size;
+  int active; // For the sync_dir files, flag to control the array.
 };
 
 struct datagram {

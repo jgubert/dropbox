@@ -56,6 +56,9 @@ int s_PrimaryServerSocket = -1;
 //Array de servidores
 struct server servers[MAXSERVERS];
 
+//Array de Sync_dir temporario
+struct file_info sync_dir_files[MAXFILES]
+
 
 // --- FUNÇÕES AUXILIARES ---
 
@@ -938,14 +941,30 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 *	FUNÇÕES AUXILIARES DO SERVIDOR
 **********************************************/
 
+void reset_sync_dir_array() {
+	int i;
+	for(i=0;i<MAXFILES;i++) {
+		struct file_info file;
+		strcpy(file.extension, "");
+		strcpy(file.last_modified, "");
+		strcpy(file.name, "");
+		file.size = 0;
+		file.active = INACTIVE;
+		sync_dir_files[i] = file;
+	}
+}
 
-void list_dir(char* sync_dir_path) {
+int list_dir(char* sync_dir_path) {
 	DIR *dir;
 	struct dirent *directory;
 	struct stat file_buffer;
     int open_file_status;
 
+	// Reset the global array of directory files
+	reset_sync_dir_array();
+	
 	if ((dir = opendir (sync_dir_path)) != NULL) {
+		int i = 0;
 		while ((directory = readdir (dir)) != NULL) {
 		if((strcmp(directory->d_name,".") != 0) && (strcmp(directory->d_name,"..") != 0)) {
 			char* file_path = malloc(strlen(sync_dir_path) + strlen(directory->d_name) + 1);
@@ -953,21 +972,27 @@ void list_dir(char* sync_dir_path) {
 			strcat(file_path, directory->d_name);
 			
 			open_file_status = stat(file_path, &file_buffer);
-			long file_size = 0;
+			int file_size = 0;
 			
 			if(open_file_status == 0) {
 				file_size = file_buffer.st_size;
 			}
 			
-			printf ("%s : %d\n", directory->d_name, file_size);
+			// Add file_info to the global temporary array 'sync_dir_files'
+			struct file_info dir_file;
+			strcpy(dir_file.name, directory->d_name);
+			dir_file.size = file_size;
+			dir_file.active = ACTIVE;
+			sync_dir_files[i] = dir_file;
+			i++;
 			}
 		}
 		closedir (dir);
 	} else {
 		printf("ERROR: could not open directory, in list_dir function");
-		return -1;
+		return ERROR;
 	}
-	return 0;
+	return SUCCESS;
 }
 
 
