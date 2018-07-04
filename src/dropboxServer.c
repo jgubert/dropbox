@@ -51,7 +51,7 @@ int s_BackupSocketsInUse = 0;
 int s_PrimaryServerSocket = -1;
 
 //Array de servidores
-struct server servers[MAXSERVERS]; 
+struct server servers[MAXSERVERS];
 
 
 // --- FUNÇÕES AUXILIARES ---
@@ -208,7 +208,7 @@ void aux_tcp_read(SOCKET socket, unsigned int size, void* buffer)
 {
 	int bytesRead = 0;
 	int result;
-	
+
 	while(bytesRead < size)
 	{
 		result = read(socket, buffer + bytesRead, size - bytesRead);
@@ -235,12 +235,12 @@ int aux_tcp_write(SOCKET socket, unsigned size, void* data)
 	return n;
 }
 
-// Le o tamanho da mensagem e logo em seguida a mensagem propriamente dita, 
+// Le o tamanho da mensagem e logo em seguida a mensagem propriamente dita,
 // retornando o tamanho dela e atuaizando/alocando os dados no buffer (parametro)
 int tcp_read(SOCKET socket, int* messageType, void** buffer)
 {
 	int length = 0;
-	
+
 	// Read the message size
 	aux_tcp_read(socket, sizeof(length), (void*)&length);
 
@@ -283,10 +283,10 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 	// NAO USADO ... Ajusta um tempo de timeout
 	// int timeout = 1000;
 	// setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-	
+
 	// Recebe uma nova mensagem
 	int rc = recvfrom(socket, localBuffer, sizeof(struct datagram), 0, (struct sockaddr *) clientAddr,(socklen_t *)&clientLen);
-	if (rc < 0) 
+	if (rc < 0)
 	{
 		printf("Erro ao receber datagrama\n");
 		return ERROR;
@@ -312,7 +312,7 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 
 	// Cria um buffer temporario que ira ter o tipo de mensagem e a mensagem propriamente dita
 	char* buffer = malloc(MaxUDPDatagramSize + sizeof(int));
-	
+
 	// Copia o tipo de mensagem
 	memcpy(buffer, &messageType, sizeof(int));
 
@@ -380,24 +380,24 @@ int main(int argc, char *argv[]) {
 	if (type == TypeServer)
 	{
 		printf("Somor um servidor principal...");
-		
+
 		// Inicializa a lista de clientes para o servidor primario
 		if ( init_primary_server_client_list() == ERROR)
 		{
 			printf("Erro ao preparar o servidor com informacoes dos clientes\n");
 		}
-		
-		// Inicializa a lista de servidores 
+
+		// Inicializa a lista de servidores
 		init_servers_list();
 		// Inicializa este servidor primario
 		servers[0].active = SERVER_ACTIVE;
 		servers[0].type = SERVER_PRIMARY;
 		servers[0].port = s_ClientConnectPort;
-		//TODO: servers[0].ip = xxx;	
+		//TODO: servers[0].ip = xxx;
 
 		printf("Inicializacao concluida!\n");
-	} 
-	else if(type == TypeBackup) 
+	}
+	else if(type == TypeBackup)
 	{
 		printf("Somos um servidor de backup...");
 
@@ -454,17 +454,17 @@ int main(int argc, char *argv[]) {
 		// Devemos criar uma thread que ira esperar por requisicoes de conexao tcp de servidores
 		// de backup
 		pthread_t thread;
-		if (pthread_create(&thread, NULL, listen_backup_tcp_requests, NULL) != 0 ) 
+		if (pthread_create(&thread, NULL, listen_backup_tcp_requests, NULL) != 0 )
 		{
 			printf("Erro na criação da thread\n");
 		}
 	}
-	
+
 	// Chama a funcao que espera por mensagens de clientes (bloqueando a continuacao do main aqui)
 	listen_client_messages(&serverListenSocket);
 }
 
-// Update the client.dat 
+// Update the client.dat
 void UpdateClientData(int dataSize, char* data)
 {
 	char dir[100] = "database/sync_dir_";
@@ -501,7 +501,7 @@ void* listen_messages_from_primary_server(void* args)
 
 		// Espera ate receber uma mensagem do servidor principal
 		int messageSize = tcp_read(socket, &messageType, (void**)&buffer);
-			
+
 		// Verifica se é um arquivo novo ou uma atualizacao do client.dat
 		if(messageType == BackupServerNewFileMessage)
 		{
@@ -542,15 +542,15 @@ void* listen_backup_tcp_requests(void* args)
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY); // inet_addr(s_InputHost)
 	serverAddress.sin_port = htons(s_InputPort);
-	bzero(&(serverAddress.sin_zero), 8);	
+	bzero(&(serverAddress.sin_zero), 8);
 
 	// associa configuracoes locais com socket
 	if (bind(sockfd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0)
 	{
 		printf("ERROR on binding -> tcp_requests\n");
 		exit(0);
-	}		
-			
+	}
+
 	// Listen to this socket
 	listen(sockfd, 8);
 
@@ -575,7 +575,7 @@ void* listen_backup_tcp_requests(void* args)
 
 		// Increment the socket count
 		s_BackupSocketsInUse++;
-		
+
 		// Pega o maior ID ativo da lista de servidores, incrementa, e adiciona o novo backup na lista
 		int backup_id = get_higher_active_server_id();
 		backup_id++;
@@ -601,10 +601,12 @@ void* listen_client_messages(void* args)
 		struct sockaddr_in clientAddr;
 		int messageType;
 		void* data;
-		
+
 		// Recebe uma nova mensagem do cliente
 		int messageSize = udp_read(clientListenSocket, &clientAddr, &messageType, &data);
-		
+
+		printf("DEBUG> messageType: %d\n", messageType);
+
 		// Verifica se a mensagem é um cliente adicionando o arquivo novo
 		if(messageType == PrimaryServerNewFileMessage)
 		{
@@ -630,7 +632,7 @@ void* listen_client_messages(void* args)
 		{
 			if (messageType == PrimaryAskForServerList)
 				{
-					//enviar server list 
+					//enviar server list
 				}
 			else{
 				if(messageType == FileMessageInterface)
@@ -642,34 +644,34 @@ void* listen_client_messages(void* args)
 
 			// Se recebemos esse arquivo, nos devemos ser o novo "servidor principal", logo
 			// precisamos abrir uma conexao com os servidores de backup recebidos nessa lista
-			// Antes disso devemos criar uma thread que ira esperar por requisicoes de conexao 
+			// Antes disso devemos criar uma thread que ira esperar por requisicoes de conexao
 			// tcp de servidores de backup
 			pthread_t thread;
-			if (pthread_create(&thread, NULL, listen_backup_tcp_requests, NULL) != 0 ) 
+			if (pthread_create(&thread, NULL, listen_backup_tcp_requests, NULL) != 0 )
 			{
 				printf("Erro na criação da thread -> listen_backup_tcp_requests\n");
 			}
 
 			// Agora precisamos de alguma forma avisar os outros servidores de backup
-			// que eles devem cancelar a conexao antiga com o antigo servidor principal 
-			// (afinal ele näo está mais acessível) e que devem se conectar com esse aqui 
-			// (acabamos de criar uma thread logo acima para receber essas conexoes), 
+			// que eles devem cancelar a conexao antiga com o antigo servidor principal
+			// (afinal ele näo está mais acessível) e que devem se conectar com esse aqui
+			// (acabamos de criar uma thread logo acima para receber essas conexoes),
 			// podemos usar a lista de servidores que o cliente tem (e que foi recebida
-			// aqui) de forma a saber quais sao os enderecos e portas desses servidores 
+			// aqui) de forma a saber quais sao os enderecos e portas desses servidores
 			// de backup e avisar eles que devem se conectar com esse aqui.
 
-			// TODO: Fazer isso que foi dito acima, existem varias formas mas a mais 
-			// facil que eu penso agora seria enviar uma mensagem pela porta UDP (que 
+			// TODO: Fazer isso que foi dito acima, existem varias formas mas a mais
+			// facil que eu penso agora seria enviar uma mensagem pela porta UDP (que
 			// cada servidor de backup tem aberta) dizendo que ele deve se conectar com
 			// tal endereco e porta (mandar na mensagem isso), essa conexao UDP deveria
-			// ser utilizada apenas para clientes mas nesse caso seria uma gambiarra 
-			// aceitável... Enfim, precisamos fazer de alguma forma que os outros 
+			// ser utilizada apenas para clientes mas nesse caso seria uma gambiarra
+			// aceitável... Enfim, precisamos fazer de alguma forma que os outros
 			// servidores de backup se conectem com o novo primario
 
 			printf("Conexoes com servidores de backup abertas!!\n");
 
-			// Devemos fechar a thread que espera pelas mensagens do servidor principal (afinal 
-			// nos somos o servidor principal agora) e enviar uma mensagem para 
+			// Devemos fechar a thread que espera pelas mensagens do servidor principal (afinal
+			// nos somos o servidor principal agora) e enviar uma mensagem para
 			// TODO: Podemos salvar o pthread variable globalmente e aqui fechá-lo
 			}
 			}

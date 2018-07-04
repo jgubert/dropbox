@@ -58,10 +58,10 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 	// NAO USADO ... Ajusta um tempo de timeout
 	// int timeout = 1000;
 	// setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-	
+
 	// Recebe uma nova mensagem
 	int rc = recvfrom(socket, localBuffer, sizeof(struct datagram), 0, (struct sockaddr *) clientAddr,(socklen_t *)&clientLen);
-	if (rc < 0) 
+	if (rc < 0)
 	{
 		printf("Erro ao receber datagrama\n");
 		return ERROR;
@@ -87,7 +87,7 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 
 	// Cria um buffer temporario que ira ter o tipo de mensagem e a mensagem propriamente dita
 	char* buffer = malloc(MaxUDPDatagramSize + sizeof(int));
-	
+
 	// Copia o tipo de mensagem
 	memcpy(buffer, &messageType, sizeof(int));
 
@@ -107,7 +107,7 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 	return rc;
 }
 
-int frontEnd(void *args)
+void* frontEnd(void *args)
 {
 
 	struct arg_portas *arguments = (struct arg_portas *)args;
@@ -159,7 +159,7 @@ int frontEnd(void *args)
 	pthread_exit(NULL);
 }
 
-int interface(void *args){
+void* interface(void *args){
 
 	struct arg_portas *arguments = (struct arg_portas *)args;
 
@@ -171,6 +171,8 @@ int interface(void *args){
 	struct sockaddr_in addr_cli;
 	int messageType;
 	void* data;
+
+	printf(">Digite um comando:\n");
 
 	while(1) {
 		scanf("%[^\n]", line);
@@ -245,7 +247,8 @@ int interface(void *args){
 			// envia datagrama
 			rc = udp_write(socket_id, arguments->portaServ, arguments->IPServ, sizeof(struct datagram),FileMessageInterface, &my_datagram);
 			// recebe datagrama com ACK
-			rc = udp_read(socket_id, &addr_cli, &messageType, &my_datagram);
+			void* datag;
+			rc = udp_read(socket_id, &addr_cli, &messageType, &datag);
 
 		} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) );
 
@@ -330,19 +333,20 @@ printf("passou por aqui");
 	args = (struct arg_portas*)malloc(sizeof *args);
 	args->portaCli = 5005 + (rand() % 1900);
 	args->portaServ = port;
-	args->IPServ = &host;
+	//args->IPServ = &host;
+	strcpy(host,args->IPServ);
 	printf("%d %d %s", args->portaCli, args->portaServ, args->IPServ);
 	printf("passou por aqui3");
 
 	pthread_t thread;
-	if (pthread_create(&thread, NULL, frontEnd, (struct arg_portas*)args) != 0 ) 
+	if (pthread_create(&thread, NULL, frontEnd, (struct arg_portas*)args) != 0 )
 	{
 		printf("Erro na criação da thread -> front_end\n");
 	}
 	printf("passou por aqui4");
 
 	pthread_t thread2;
-	if (pthread_create(&thread2, NULL, interface, NULL) != 0 ) 
+	if (pthread_create(&thread2, NULL, interface, NULL) != 0 )
 	{
 		printf("Erro na criação da thread -> interface\n");
 	}
@@ -378,7 +382,7 @@ int login_server(char *host, int port) {
 	//args->IPServ = &host;
 
 	//pthread_t thread;
-	//if (pthread_create(&thread, NULL, frontEnd, (struct arg_portas*)args) != 0 ) 
+	//if (pthread_create(&thread, NULL, frontEnd, (struct arg_portas*)args) != 0 )
 	//{
 	//	printf("Erro na criação da thread -> front_end\n");
 	//}
@@ -422,6 +426,8 @@ int login_server(char *host, int port) {
 int create_sync_dir() {
 	//TODO implementar
 	char dir_name[50] = "sync_dir_";
+
+	printf("user_name: %s\n", user_name);
 
 	strcat(dir_name,user_name);
 

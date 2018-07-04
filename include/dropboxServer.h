@@ -23,3 +23,4 @@ int log_device(char username[]);
 int log_off_device(char username[]);
 int save_clients();
 int load_clients();
+int get_higher_active_server_id();
