@@ -926,6 +926,7 @@ void init_servers_list() {
 
 int get_higher_active_server_id() {
 	int higher_id = 0;
+	int i =0;
 	for(i=0;i<MAXSERVERS;i++) {
 		if(servers[i].active == SERVER_ACTIVE) {
 			if(servers[i].id > higher_id) {
