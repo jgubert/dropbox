@@ -86,7 +86,7 @@ struct arg_portas {
 
 struct server{
 	int type;	// 1 - primario 2 - backup
-	char ip[16];		//endereço ip do servidor
+	char ip[100];		//endereço ip do servidor
 	int port;		//porta do servidor
 	int id;		//id de chegada
 	int active;		//para fazer exclusão lógica: '1' - ativo 	'-1' - inativo

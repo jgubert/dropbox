@@ -38,10 +38,11 @@ struct client clients[10];
 int semaforo = 0;
 char buffer[BUFFER_SIZE];
 
-// Os dados de entrada do programa (input port and ip host)
+// Os dados de entrada do programa (input port, ip host, local ip)
 int s_InputPort;
 char s_InputHost[100];
 int s_ClientConnectPort;
+char s_LocalIp[100];
 
 // Todas as conexoes de servidores de backup (sockets)
 int s_BackupSockets[MaximumBackupServers];
@@ -352,11 +353,11 @@ int main(int argc, char *argv[]) {
 	///////////////////
 
 	//Pega paramentro
-	if(argc < 3) {
+	if(argc != 5) {
 		printf("Utilizar:\n");
-		printf("dropBoxServer <1 - primario> 	<client connect port> <backup tcp listen port>\n");
+		printf("dropBoxServer <1 - primario>	<client connect port>	<backup tcp listen port>	<local ip address>\n");
 		printf("ou:\n");
-		printf("dropBoxServer <2 - backup> 		<client connect port> <backup tcp connect port> <primary server ip host>\n");
+		printf("dropBoxServer <2 - backup>	<client connect port>	<backup tcp connect port>	<primary server ip host>\n");
 		exit(1);
 	}
 
@@ -365,10 +366,14 @@ int main(int argc, char *argv[]) {
 	s_ClientConnectPort = atoi(argv[2]);
 	s_InputPort 		= atoi(argv[3]);
 
-	if(argc == 5){
+	if(type == TypeBackup){
 		host = malloc(strlen(argv[4]));
 		strcpy(host, argv[4]); //ip host
 		strcpy(s_InputHost, argv[4]);
+		
+	} else {
+		s_LocalIp = malloc(strlen(argv[4]));
+		strcpy(s_LocalIp, argv[4]);
 	}
 
 	////////////////////////////
@@ -392,8 +397,8 @@ int main(int argc, char *argv[]) {
 		// Inicializa este servidor primario
 		servers[0].active = SERVER_ACTIVE;
 		servers[0].type = SERVER_PRIMARY;
-		servers[0].port = s_ClientConnectPort;
-		//TODO: servers[0].ip = xxx;
+		servers[0].port = s_InputPort;
+		strcpy(servers[0].ip, s_LocalIp);
 
 		printf("Inicializacao concluida!\n");
 	}
@@ -582,7 +587,7 @@ void* listen_backup_tcp_requests(void* args)
 		servers[backup_id].active = SERVER_ACTIVE;
 		servers[backup_id].type = SERVER_BACKUP;
 		servers[backup_id].port = newSocket;
-		//TODO: servers[backup_id].ip = ;
+		strcpy(servers[backup_id].ip, inet_ntoa(backupAddress.sin_addr));
 
 		// Envia todos os dados necessarios para esse novo servidor de backup
 		// TODO: ... do servidor principal para os server de backup (client.dat)
