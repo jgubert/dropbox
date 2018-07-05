@@ -45,6 +45,7 @@ int s_InputPort;
 char s_InputHost[100];
 int s_ClientConnectPort;
 char* s_LocalIp;
+int local_Id = -1;
 
 // Todas as conexoes de servidores de backup (sockets)
 int s_BackupSockets[MaximumBackupServers];
@@ -81,6 +82,32 @@ void* backup1(void* args){
 
 void* backup2(void* args){
 
+}
+
+// Algoritmo de eleição lider: adaptação do bully
+// Como temos a lista de todos os servidores, é possível descobrir qual é o com o maior ID, para executar a eleição
+void bully_election() {
+	int i;
+	int max_active_id = 0;
+	// Este servidor verifica se ele é o com o maior ID
+	for(i = 0; i<MAXSERVERS; i++) {
+		if(servers[i].active == ACTIVE) {
+			if(servers[i].id > max_active_id) {
+				max_active_id = servers[i].id;
+			}
+		}
+	}
+	// Caso seja o maior ID, vai avisar todos os outros servidores que ele é o novo primário
+	if(servers[local_Id].id >= max_active_id) {
+		//Notifica os outros servidores de backup com o ID do novo servidor primário (este)
+		for(i = 0; i<MAXSERVERS; i++) {	
+			if((servers[i].active == ACTIVE) && servers[i].id != local_Id) {
+				notify_backups_new_primary_server(servers[i]);	
+			}
+		}
+		//Executar todas as mudanças de servidor backup para primário.
+		change_to_primary();
+	}
 }
 
 void* servidor(void* args) {
@@ -979,6 +1006,15 @@ int send_file(int s, struct sockaddr* peer, int peerlen, char* userid){
 /*********************************************
 *	FUNÇÕES AUXILIARES DO SERVIDOR
 **********************************************/
+
+void notify_backups_new_primary_server(struct server bkp_server) {
+	//Envia o ID deste servidor, que é o vencedor da eleição, para os outros servidores de backup.
+	//Isto significa que este servidor será o novo servidor primário.
+}
+
+void change_to_primary() {
+	//Alterar as configurações deste servidor que era backup, para transformar em primário.
+}
 
 void reset_sync_dir_array() {
 	int i;
