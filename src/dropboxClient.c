@@ -48,6 +48,7 @@ struct datagram my_datagram; // datagrama que será enviado
 
 int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, void** buffer)
 {
+	printf("[udp_read] entrou na funcao\n");
 	// Cria um buffer temporario geral e outro local
 	*buffer = malloc(MaxUDPDatagramSize);
 	char* localBuffer = (char*)malloc(MaxUDPDatagramSize + sizeof(int));
@@ -59,6 +60,7 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 	// int timeout = 1000;
 	// setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
+	printf("[udp_read] esperando mensagem!\n");
 	// Recebe uma nova mensagem
 	int rc = recvfrom(socket, localBuffer, sizeof(struct datagram), 0, (struct sockaddr *) clientAddr,(socklen_t *)&clientLen);
 	if (rc < 0)
@@ -66,17 +68,24 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 		printf("Erro ao receber datagrama\n");
 		return ERROR;
 	}
+	printf("[udp_read] mensagem chegou\n");
 
 	// Ajusta o tipo de mensagem
 	*messageType = *(int*)localBuffer;
 
+	printf("[udp_read] messageType = %d\n", *messageType);
+
 	// Copia os dados
 	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
 
+	printf("[udp_read] copiou buffer\n");
+
 	// Deleta o buffer local
-	printf("%p\n", ( char * )localBuffer );
+	//printf("%p\n", ( char * )localBuffer );
 	free(localBuffer);
 	//bzero(localBuffer,MaxUDPDatagramSize);
+
+	printf("[udp_read] saindo da funcao\n");
 
 	return rc - sizeof(int);
 }
@@ -106,8 +115,10 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 
 	//int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
 	int rc = sendto(socket, buffer, size, 0, (struct sockaddr*) &peer, peerlen);
+
 	// Limpa o buffer temporario
 	free(buffer);
+	printf("[udp_write] saindo da funcao\n");
 
 	return rc;
 }
@@ -444,7 +455,7 @@ int login_server(char *host, int port) {
 
 	} while (rc < 0 || ((my_datagram.instruction & 0x00000001) ^ 0x00000001) ); // recebe algo e recebe o ACK do servidor
 	*/
-	printf("[login_server]Socket: %d\n\tPorta: %d\n\tHost: %s\nUser: %s",socket_id, port, host, my_datagram.username);
+	printf("\n[login_server]Socket: %d\n\tPorta: %d\n\tHost: %s\n\tUser: %s\n",socket_id, port, host, my_datagram.username);
 
 
 	rc = udp_write(socket_id, port, host, 500, ESTABLISH_CONNECTION, &my_datagram);

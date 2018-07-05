@@ -33,7 +33,7 @@
 
 #define MaximumBackupServers			100
 
-#define FileFolder	"Database"
+#define FileFolder	"database"
 
 // variaveis globais de controle do servidor
 struct client clients[10];
@@ -102,6 +102,7 @@ void* servidor(void* args) {
 
 		// verifica se usuario existe no sistema
 		if ( is_first_connection(arguments->my_datagram.username) ){
+			printf("[servidor][ESTABLISH_CONNECTION] First Connection\n");
 
 			// get available client slot
 			int i = 0;
@@ -124,10 +125,12 @@ void* servidor(void* args) {
 				create_path(clients[i].userid);
 
 				assembly_server_inst(&arguments->my_datagram.instruction, FIRST_TIME_USER);
+				printf("[servidor][ESTABLISH_CONNECTION] Crio pasta do usuario no database\n");
 			}
 		}
 
 		else {
+			printf("[servidor][ESTABLISH_CONNECTION] Not First Connection\n");
 			int device_index = log_device(arguments->my_datagram.username);
 			int client_index = get_client_index(arguments->my_datagram.username);
 
@@ -136,14 +139,18 @@ void* servidor(void* args) {
 					clients[client_index].logged_in = TRUE;
 					save_clients();
 				assembly_server_inst(&arguments->my_datagram.instruction, CONNECTED);
+				printf("[servidor][ESTABLISH_CONNECTION] Conectado\n");
 			}
 			else {
 				assembly_server_inst(&arguments->my_datagram.instruction, TOO_MANY_DEVICES);
+				printf("[servidor][ESTABLISH_CONNECTION] Erro de conexão! Muitos devices!\n");
 			}
 		}
 
 		assembly_server_inst(&arguments->my_datagram.instruction, ACK);
-		sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
+		printf("\n[login_server]Socket: %d\n\tPorta: %d\n\tHost: %s\n\tUser: %s\n",arguments->s, s_ClientConnectPort, s_LocalIp, arguments->my_datagram.username);
+		udp_write(arguments->s,s_ClientConnectPort, s_LocalIp, 500, ACK, &arguments->my_datagram);
+		//sendto(arguments->s, &arguments->my_datagram, sizeof(struct datagram), 0, (struct sockaddr *)&arguments->clientAddr, clientLen);
 
 		// sair da thread
 	}
@@ -210,6 +217,7 @@ void* servidor(void* args) {
 
 	// ELSE, OUTRAS INSTRUCOES
 	//printf("Acabou a thread: %d\n", instruction_id);
+	printf("[servidor] Saindo da funcao\n");
 	pthread_exit(NULL);
 
 }
@@ -305,13 +313,13 @@ int udp_read(SOCKET socket, struct sockaddr_in* clientAddr, int* messageType, vo
 	// Ajusta o tipo de mensagem
 	*messageType = *(int*)localBuffer;
 
-	printf("[udp_write] messageType = %d\n", *messageType);
-	printf("[udp_write] localBuffer = %s\n", localBuffer);
+	printf("[udp_read] messageType = %d\n", *messageType);
+	printf("[udp_read] localBuffer = %s\n", localBuffer);
 
 	// Copia os dados
 	memcpy(*buffer, &localBuffer[sizeof(int)], rc);
 
-	printf("[udp_write] BUFFER: %s\n", buffer);
+	printf("[udp_read] BUFFER: %s\n", buffer);
 
 	// Deleta o buffer local
 	free(localBuffer);
@@ -339,7 +347,8 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 	peer.sin_addr.s_addr = inet_addr(host);
 	peerlen = sizeof(peer);
 
-	int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
+	//	int rc = sendto(socket, datagram, size, 0, (struct sockaddr*) &peer, peerlen);
+	int rc = sendto(socket, buffer, size, 0, (struct sockaddr*) &peer, peerlen);
 
 	// Limpa o buffer temporario
 	free(buffer);
@@ -350,9 +359,9 @@ int udp_write(SOCKET socket, int port, char* host, unsigned size, int messageTyp
 int main(int argc, char *argv[]) {
 
   	struct  sockaddr_in peer;
-	int port;
 	int peerlen, n;
 	int type;
+	int port;
 	char* host;
 
 	// Socket usado pelo servidor pricipal para receber mensagens de clientes
@@ -663,6 +672,11 @@ void* listen_client_messages(void* args)
 		}
 		// É um envio da lista de servidores pelo lado do cliente (devemos assumir como servidor
 		// principal) (PrimaryServerServerList)
+		else if (messageType == ESTABLISH_CONNECTION){
+
+			printf("Recebido um pedido de ESTABLISH_CONNECTION\n");
+
+		}
 		else
 		{
 			if (messageType == PrimaryAskForServerList)
