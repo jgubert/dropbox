@@ -469,6 +469,7 @@ int login_server(char *host, int port) {
 	{
 		printf("recebeu ACK");
 	}
+	printf("[login_server] messageType = %d\n", messageType);
 
 	return SUCCESS;
 }

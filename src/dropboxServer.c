@@ -742,6 +742,7 @@ void* listen_client_messages(void* args)
 
 		// Limpa os dados temporarios
 		free(data);
+		sleep(1);
 	}
 }
 
